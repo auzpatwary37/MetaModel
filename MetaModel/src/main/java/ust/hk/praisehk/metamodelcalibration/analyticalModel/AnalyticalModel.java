@@ -55,6 +55,12 @@ public interface AnalyticalModel {
 	
 	public void setFileLoc(String fileLoc);
 	
+	/**
+	 * This gives the travel time of the link at the given time based on the model and current link flow
+	 * @return
+	 */
+	public double getLinkTravelTime(Id<Link>linkId,double time);
+	
 	public static final String MarginalUtilityofTravelCarName="MarginalUtilityofTravelCar";
 	public static final String MarginalUtilityofDistanceCarName="MarginalUtilityofDistanceCar";
 	public static final String MarginalUtilityofMoneyName="MarginalUtilityofMoney";

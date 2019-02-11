@@ -1012,6 +1012,18 @@ public class CNLSUEModel implements AnalyticalModel{
 		return tollerance;
 	}
 
+	@Override
+	public double getLinkTravelTime(Id<Link> linkId, double time) {
+		String timeBean=null;
+		for(String s:this.timeBeans.keySet()) {
+			if(time==0) {time=1;}
+			if(time>this.timeBeans.get(s).getFirst() && time<=this.timeBeans.get(s).getSecond()) {
+				timeBean=s;
+			}
+		}
+		return ((AnalyticalModelLink)this.networks.get(timeBean).getLinks().get(linkId)).getLinkTravelTime(this.timeBeans.get(timeBean), this.Params, this.AnalyticalModelInternalParams);
+	}
+
 	
 }
 
