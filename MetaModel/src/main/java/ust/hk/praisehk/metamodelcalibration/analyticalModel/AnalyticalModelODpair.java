@@ -213,15 +213,21 @@ public class AnalyticalModelODpair {
 	public void addtrip(Trip trip){
 		String timeId=null;
 		Integer i=0;
+		double lastTime=0;
+		String lastTimeBean=null;
 		for(String t:this.timeBean.keySet()) {
+			if(timeBean.get(t).getSecond()>lastTime) {
+				lastTime=timeBean.get(t).getSecond();
+				lastTimeBean=t;
+			}
 			if(trip.getStartTime()>=this.timeBean.get(t).getFirst() && trip.getStartTime()<this.timeBean.get(t).getSecond()) {
 				timeId=t;
 			}	
 		}
-		//TODO: do some thing about this
+	
 		if(timeId==null) {
 			
-			timeId="AfterEveningPeak";
+			timeId=lastTimeBean;
 		}
 		
 		if(trip.getRoute()!=null){
@@ -256,6 +262,57 @@ public class AnalyticalModelODpair {
 		
 	}
 	
+	public void addtripWithoutRoute(Trip trip){
+		String timeId=null;
+		Integer i=0;
+		double lastTime=0;
+		String lastTimeBean=null;
+		for(String t:this.timeBean.keySet()) {
+			if(timeBean.get(t).getSecond()>lastTime) {
+				lastTime=timeBean.get(t).getSecond();
+				lastTimeBean=t;
+			}
+			if(trip.getStartTime()>=this.timeBean.get(t).getFirst() && trip.getStartTime()<this.timeBean.get(t).getSecond()) {
+				timeId=t;
+			}	
+		}
+	
+		if(timeId==null) {
+			
+			timeId=lastTimeBean;
+		}
+		
+//		if(trip.getRoute()!=null){
+			demand.put(timeId, demand.get(timeId)+1);
+//			this.agentCARCounter+=trip.getCarPCU();
+//			if(!routeset.containsKey(trip.getRoute().getRouteId())){//A new route 
+//				routeset.put(trip.getRoute().getRouteId(),1);
+//				this.RoutesWithDescription.put(trip.getRoute().getRouteId(),trip.getRoute());
+//				//this.RoutesWithDescription.get(trip.getRoute().getRouteDescription()).addPerson(trip.getPersonId());
+//				//this.no_of_occurance.put(trip.getRouteId(), 1);
+//
+//			}else{ //not a new route
+//				this.routeset.put(trip.getRoute().getRouteId(), routeset.get(trip.getRoute().getRouteId())+1);
+//				//this.RoutesWithDescription.get(trip.getRoute().getRouteDescription()).addPerson(trip.getPersonId());
+//			}
+//		}else if(trip.getTrRoute()!=null) {
+////			if(demand.get(timeId)==null) {
+////				System.out.println();
+////			}
+//			demand.put(timeId, demand.get(timeId)+1);
+//			this.agentTrCounter++;
+//			if(!this.Transitroutes.containsKey(trip.getTrRoute().getTrRouteId())) {
+//				this.Transitroutes.put(trip.getTrRoute().getTrRouteId(),trip.getTrRoute());
+//				this.transitRouteCounter.put(trip.getTrRoute().getTrRouteId(), 1);
+//			}else {
+//				this.transitRouteCounter.put(trip.getTrRoute().getTrRouteId(),this.transitRouteCounter.get(trip.getTrRoute().getTrRouteId())+ 1);
+//			}
+//		}else {
+//			this.personIdList.add(trip.getPersonId());
+//		}
+		
+		
+	}
 	
 	/**
 	 * This will return the full route Set
