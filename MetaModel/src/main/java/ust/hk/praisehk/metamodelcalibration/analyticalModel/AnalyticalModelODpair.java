@@ -262,6 +262,26 @@ public class AnalyticalModelODpair {
 		
 	}
 	
+	public void addCarRoute(AnalyticalModelRoute r) {
+		if(!routeset.containsKey(r.getRouteId())){//A new route 
+			routeset.put(r.getRouteId(),1);
+			this.RoutesWithDescription.put(r.getRouteId(),r);
+			
+		}else{ //not a new route, This should not happen in this case or should it???
+			this.routeset.put(r.getRouteId(), routeset.get(r.getRouteId())+1);
+		}
+		this.generateRoutes(0);
+		this.generateLinkIncidence();
+	}
+	
+	/**
+	 * !!!WARNING!!!
+	 * This do not work. Here for future improvement while adding pt routeset generation
+	 */
+	public void addTransitRoute() {
+		
+	}
+	
 	public void addtripWithoutRoute(Trip trip){
 		String timeId=null;
 		Integer i=0;

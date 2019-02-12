@@ -2,10 +2,13 @@ package ust.hk.praisehk.metamodelcalibration.analyticalModelImpl;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Route;
+import org.matsim.core.population.routes.RouteUtils;
+import org.matsim.core.router.util.LeastCostPathCalculator.Path;
 import org.matsim.core.utils.collections.Tuple;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
@@ -20,6 +23,7 @@ public class CNLRoute implements AnalyticalModelRoute{
 	private double distanceTravelled=0;
 	private ArrayList<Id<Link>>links=new ArrayList<>();
 	private double RouteUtility=0;
+	private final Route route;
 	
 	public CNLRoute(Route r) {
 		String[] part=r.getRouteDescription().split(" ");
@@ -28,18 +32,20 @@ public class CNLRoute implements AnalyticalModelRoute{
 			}
 		this.distanceTravelled=r.getDistance();
 		this.routeId=Id.create(r.getRouteDescription(), AnalyticalModelRoute.class);
+		this.route=r;
 	}
 	
 	public CNLRoute(Path p) {
-		String[] part=r.getRouteDescription().split(" ");
-		for(String s:part) {
-			links.add(Id.createLinkId(s.trim()));
-			}
-		this.distanceTravelled=r.getDistance();
-		this.routeId=Id.create(r.getRouteDescription(), AnalyticalModelRoute.class);
+		this(AnalyticalModelRoute.PathToRouteConverter(p));
+		
 	}
 	
 	
+	@Override
+	public Route getRoute() {
+		return route;
+	}
+
 	@Override
 	public double getTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,LinkedHashMap<String,Double> params,LinkedHashMap<String,Double>anaParams) {
 		this.travelTime=0;
