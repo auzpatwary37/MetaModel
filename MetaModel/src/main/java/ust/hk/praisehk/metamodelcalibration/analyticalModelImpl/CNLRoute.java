@@ -30,6 +30,14 @@ public class CNLRoute implements AnalyticalModelRoute{
 		this.routeId=Id.create(r.getRouteDescription(), AnalyticalModelRoute.class);
 	}
 	
+	public CNLRoute(Path p) {
+		String[] part=r.getRouteDescription().split(" ");
+		for(String s:part) {
+			links.add(Id.createLinkId(s.trim()));
+			}
+		this.distanceTravelled=r.getDistance();
+		this.routeId=Id.create(r.getRouteDescription(), AnalyticalModelRoute.class);
+	}
 	
 	
 	@Override

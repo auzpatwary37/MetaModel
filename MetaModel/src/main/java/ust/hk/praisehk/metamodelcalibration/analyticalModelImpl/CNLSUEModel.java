@@ -15,17 +15,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
+import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Population;
+import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.router.util.LeastCostPathCalculator.Path;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.Departure;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.vehicles.Vehicles;
+
+import com.google.common.collect.Sets;
 
 import de.xypron.jcobyla.Cobyla;
 import de.xypron.jcobyla.CobylaExitStatus;
@@ -40,6 +45,7 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelTrans
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.InternalParamCalibratorFunction;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
+import ust.hk.praisehk.shortestpath.L2lLeastCostCalculatorFactory;
 
 
 public class CNLSUEModel implements AnalyticalModel{
@@ -1024,6 +1030,22 @@ public class CNLSUEModel implements AnalyticalModel{
 		return ((AnalyticalModelLink)this.networks.get(timeBean).getLinks().get(linkId)).getLinkTravelTime(this.timeBeans.get(timeBean), this.Params, this.AnalyticalModelInternalParams);
 	}
 
+	/**
+	 * This will for now generate the car paths
+	 * The transit path generation will be added later as well
+	 * This will signal the ODpairs to generate routes. This can be done to specific od pairs in future
+	 * 
+	 */
+	public void generatePath() {
+		L2lLeastCostCalculatorFactory shortestPathCalculatorFactory=new L2lLeastCostCalculatorFactory(scenario, Sets.newHashSet(TransportMode.car), this);
+		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()) {
+			for(String timeBean:this.timeBeans.keySet()) {
+				double randStartTime=this.timeBeans.get(timeBean).getFirst()+Math.random()*(this.timeBeans.get(timeBean).getSecond()-this.timeBeans.get(timeBean).getFirst());
+				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(odPair.getOriginNode(), odPair.getDestinationNode(), randStartTime, null, null);
+				
+			}
+		}
+	}
 	
 }
 
