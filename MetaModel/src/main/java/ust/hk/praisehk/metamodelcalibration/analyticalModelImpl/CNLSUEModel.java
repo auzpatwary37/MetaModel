@@ -22,6 +22,7 @@ import org.matsim.api.core.v01.population.Population;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.router.util.LeastCostPathCalculator.Path;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.Departure;
@@ -102,6 +103,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		
 		//TimebeanId vs demands map
 		private Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> Demand=new ConcurrentHashMap<>();//Holds ODpair based demand
+		private Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> originalDemand=new ConcurrentHashMap<>();//This will hold the original demand and will not be modified the demand on the other hand can be modified for incremental loading
 		private Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> carDemand=new ConcurrentHashMap<>(); 
 		private CNLODpairs odPairs;
 		private Map<String,Map<Id<TransitLink>,TransitLink>> transitLinks=new ConcurrentHashMap<>();
@@ -245,7 +247,66 @@ public class CNLSUEModel implements AnalyticalModel{
 			this.getDemand().put(timeBeanId, new HashMap<>(this.getOdPairs().getdemand(timeBeanId)));
 			for(Id<AnalyticalModelODpair> odId:this.getDemand().get(timeBeanId).keySet()) {
 				double totalDemand=this.getDemand().get(timeBeanId).get(odId);
-				this.getCarDemand().get(timeBeanId).put(odId, 0.5*totalDemand);
+				if(this.odPairs.getODpairset().get(odId).getTrRoutes().isEmpty()) {
+					this.getCarDemand().get(timeBeanId).put(odId, totalDemand);
+				}else {
+					this.getCarDemand().get(timeBeanId).put(odId, 0.5*totalDemand);
+			
+				}
+			}
+			logger.info("Startig from 0.5 auto and transit ratio");
+			if(this.getDemand().get(timeBeanId).size()!=this.carDemand.get(timeBeanId).size()) {
+				logger.error("carDemand and total demand do not have same no of OD pair. This should not happen. Please check");
+			}
+		}
+		
+		int agentTrip=0;
+		int matsimTrip=0;
+		int agentDemand=0;
+		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()) {
+			agentTrip+=odPair.getAgentCounter();
+			for(String s:odPair.getTimeBean().keySet()) {
+				agentDemand+=odPair.getDemand().get(s);
+			}
+			
+		}
+		logger.info("Demand total = "+agentDemand);
+		logger.info("Total Agent Trips = "+agentTrip);
+	
+	}
+	
+	public void generateRoutesAndODWithoutRoute(Population population,Network network,TransitSchedule transitSchedule,
+			Scenario scenario,Map<String,FareCalculator> fareCalculator) {
+		//this.setLastPopulation(population);
+		//System.out.println("");
+		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
+		this.getOdPairs().generateODpairsetWithoutRoutes();
+		this.generateRoute();
+		//this.getOdPairs().generateRouteandLinkIncidence(0.);
+		for(String s:this.timeBeans.keySet()) {
+			this.getNetworks().put(s, new CNLNetwork(network));
+			this.performTransitVehicleOverlay(this.getNetworks().get(s),
+					transitSchedule,scenario.getTransitVehicles(),this.timeBeans.get(s).getFirst(),
+					this.timeBeans.get(s).getSecond());
+			this.getTransitLinks().put(s,this.getOdPairs().getTransitLinks(this.timeBeans,s));
+		}
+		this.fareCalculator=fareCalculator;
+		
+		
+		this.carDemand.size();
+		
+		this.setTs(transitSchedule);
+		for(String timeBeanId:this.timeBeans.keySet()) {
+			this.getConsecutiveSUEErrorIncrease().put(timeBeanId, 0.);
+			this.getDemand().put(timeBeanId, new HashMap<>(this.getOdPairs().getdemand(timeBeanId)));
+			for(Id<AnalyticalModelODpair> odId:this.getDemand().get(timeBeanId).keySet()) {
+				double totalDemand=this.getDemand().get(timeBeanId).get(odId);
+				if(this.odPairs.getODpairset().get(odId).getTrRoutes().isEmpty()) {
+					this.getCarDemand().get(timeBeanId).put(odId, totalDemand);
+				}else {
+					this.getCarDemand().get(timeBeanId).put(odId, 0.5*totalDemand);
+			
+				}
 			}
 			logger.info("Startig from 0.5 auto and transit ratio");
 			if(this.getDemand().get(timeBeanId).size()!=this.carDemand.get(timeBeanId).size()) {
@@ -800,6 +861,24 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 	}
 	
+	protected void applyModalSplit(String timeBeanId,double defaultptMode) {
+		if(defaultptMode>=0 &&defaultptMode<=100 ) {
+			if(defaultptMode>1) {
+				defaultptMode=defaultptMode/100;
+			}
+		}else {
+			throw new IllegalArgumentException("default pt mode ratio cannot be larger than 100");
+		}
+		
+		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()){
+			double demand=this.getDemand().get(timeBeanId).get(odPair.getODpairId());
+			if(demand!=0) { 
+				Double cardemand=demand*defaultptMode;
+				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),cardemand);
+			}
+		}
+		
+	}
 	
 	@Override
 	public Map<Integer, Measurements> calibrateInternalParams(Map<Integer,Measurements> simMeasurements,Map<Integer,LinkedHashMap<String,Double>>params,LinkedHashMap<String,Double> initialParam,int currentParamNo) {
@@ -827,6 +906,31 @@ public class CNLSUEModel implements AnalyticalModel{
 	
 	
 	/**
+	 * This function will save the original demand and load incrementally based on the input percentage given
+	 * Percentage <=100
+	 * initial car demand will control the default car demand ratio (recommended 50%)
+	 * Will not affect if no transit route available 
+	 */
+	private void loadDemand(Double percentage, double initialCarDemandPercentage) {
+		if(percentage>100) {
+			throw new IllegalArgumentException("percentage cannot be greater than 100");
+		}
+		this.originalDemand=new ConcurrentHashMap<>(this.Demand);
+		for(String timeBean:this.Demand.keySet()) {
+			for(Id<AnalyticalModelODpair> odPairId:this.Demand.get(timeBean).keySet()) {
+				if(this.getOdPairs().getODpairset().get(odPairId).getTrRoutes().isEmpty()) {
+					this.Demand.get(timeBean).put(odPairId, this.originalDemand.get(timeBean).get(odPairId)*percentage/100);
+					this.carDemand.get(timeBean).put(odPairId, this.Demand.get(timeBean).get(odPairId));
+				}else {
+					this.Demand.get(timeBean).put(odPairId, this.originalDemand.get(timeBean).get(odPairId)*percentage/100);
+					this.carDemand.get(timeBean).put(odPairId, this.Demand.get(timeBean).get(odPairId)*initialCarDemandPercentage/100);
+				}
+			}
+		}
+		
+	}
+	
+	/**
 	 * This method performs a Traffic Assignment of a single time Bean
 	 * @param params: calibration Parameters
 	 * @param anaParams: Analytical model Parameters
@@ -838,6 +942,53 @@ public class CNLSUEModel implements AnalyticalModel{
 		boolean shouldStop=false;
 		
 		for(int i=1;i<500;i++) {
+			//for(this.car)
+			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
+			this.generateRoute();
+			linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams);
+			linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params,anaParams);
+			shouldStop=this.CheckConvergence(linkCarVolume, linkTransitVolume, this.getTollerance(), timeBeanId,i);
+			this.UpdateLinkVolume(linkCarVolume, linkTransitVolume, i, timeBeanId);
+			if(i==1 && shouldStop==true) {
+				boolean demandEmpty=true;
+				for(AnalyticalModelODpair od:this.getOdPairs().getODpairset().values()) {
+					if(od.getDemand().get(timeBeanId)!=0) {
+						demandEmpty=false;
+						break;
+					}
+				}
+				if(!demandEmpty) {
+					System.out.println("The model cannot converge on first iteration!!!");
+				}
+			}
+			if(shouldStop) {break;}
+			this.performModalSplit(params, anaParams, timeBeanId);
+			
+		}
+		
+		
+	}
+	
+/**
+ * This function is for enoch's testing
+ * @param params
+ * @param anaParams
+ * @param timeBeanId
+ * @param defaultModeRatio
+ */
+	public void singleTimeBeanTA(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId,double defaultModeRatio) {
+		HashMap<Id<TransitLink>, Double> linkTransitVolume;
+		HashMap<Id<Link>,Double> linkCarVolume;
+		boolean shouldStop=false;
+		double percentage=0;
+		this.generateRoute();
+		for(int i=1;i<500;i++) {
+			if(i<10) {
+				percentage=Math.sqrt((20*i-i*i)/100.);
+			}else {
+				percentage=1;
+			}
+			this.loadDemand(percentage, 30);
 			//for(this.car)
 			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
 			linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams);
@@ -1036,13 +1187,15 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * This will signal the ODpairs to generate routes. This can be done to specific od pairs in future
 	 * 
 	 */
-	public void generatePath() {
+	public void generateRoute() {
 		L2lLeastCostCalculatorFactory shortestPathCalculatorFactory=new L2lLeastCostCalculatorFactory(scenario, Sets.newHashSet(TransportMode.car), this);
 		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()) {
 			for(String timeBean:this.timeBeans.keySet()) {
 				double randStartTime=this.timeBeans.get(timeBean).getFirst()+Math.random()*(this.timeBeans.get(timeBean).getSecond()-this.timeBeans.get(timeBean).getFirst());
-				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(odPair.getOriginNode(), odPair.getDestinationNode(), randStartTime, null, null);
-				
+				Link startLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getOriginNode().getCoord());
+				Link endLink=	NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getDestinationNode().getCoord());
+				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, randStartTime, null, null);
+				odPair.addCarRoute(new CNLRoute(path));
 			}
 		}
 	}

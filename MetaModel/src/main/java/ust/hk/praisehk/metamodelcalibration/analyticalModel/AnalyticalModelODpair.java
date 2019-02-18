@@ -263,6 +263,7 @@ public class AnalyticalModelODpair {
 	}
 	
 	public void addCarRoute(AnalyticalModelRoute r) {
+		this.agentCARCounter++;
 		if(!routeset.containsKey(r.getRouteId())){//A new route 
 			routeset.put(r.getRouteId(),1);
 			this.RoutesWithDescription.put(r.getRouteId(),r);
