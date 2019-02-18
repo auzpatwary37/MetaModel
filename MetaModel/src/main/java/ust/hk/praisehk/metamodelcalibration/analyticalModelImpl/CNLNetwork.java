@@ -10,6 +10,7 @@ import org.matsim.api.core.v01.network.Node;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
+import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
 
 
 
@@ -101,14 +102,28 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 
 	
 	/**
-	 * 
+	 * !!!CAUTION!!!
 	 * This method overlays the transit vehicles on the links of the network
 	 * @param ts
 	 * @param scenario
+	 * This do not work please do not use
 	 */
 	@Override
 	public void overlayTransitVehicles(TransitSchedule ts, Scenario scenario) {
 		
+	}
+
+
+	/**
+	 * This method will update the g/c ratio of the link calculated from the network
+	 * the capacity will be multiplied with this ratio in the calculation of travel time 
+	 * default is set to 1
+	 */
+	@Override
+	public void updateGCRatio(SignalFlowReductionGenerator signalGC) {
+		for(CNLLink link:this.getCNLLinks().values()) {
+			link.setGcRatio(signalGC.getGCratio(link));
+		}
 	}
 
 }

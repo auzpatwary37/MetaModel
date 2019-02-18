@@ -34,9 +34,13 @@ public abstract class AnalyticalModelLink implements Link{
 	protected double linkTransitVolume=0;
 	protected double linkTransitPassenger=0;
 	protected double linkTravelTime=0;
+	protected double gcRatio=1;
 	
 	
 	
+	
+
+
 	/**
 	 * Constructor
 	 * @param link: The wrapped Link
@@ -98,6 +102,15 @@ public abstract class AnalyticalModelLink implements Link{
 	
 	public void clearLinkCarFlow() {
 		this.linkCarVolume=0;
+	}
+	
+	public double getGcRatio() {
+		return gcRatio;
+	}
+
+
+	public void setGcRatio(double gcRatio) {
+		this.gcRatio = gcRatio;
 	}
 	
 	public void clearNANFlow() {

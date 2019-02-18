@@ -13,6 +13,8 @@ import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
+import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
+
 
 
 public abstract class AnalyticalModelNetwork implements Network{
@@ -48,6 +50,8 @@ public abstract class AnalyticalModelNetwork implements Network{
 	 * a Convenient method to create the network
 	 */
 	public abstract AnalyticalModelNetwork createNetwork(Network network);
+	
+	public abstract void updateGCRatio(SignalFlowReductionGenerator signalGC);
 	
 	/**
 	 * this method will clean the link NAN volumes of the network
