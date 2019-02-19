@@ -374,8 +374,9 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * This variation is for enoch
 	 * This will not perform sue only, rather genrate routeset close to matsim
 	 * The function will deploy a shortest path algorithm based on the output of the previous algorithm
+	 * THe pt mode ratio is between 0 to 1 
 	 */
-	public AnalyticalModelODpairs generateMATSimRoutes() {
+	public AnalyticalModelODpairs generateMATSimRoutes(double defaultPtModeRatio) {
 		LinkedHashMap<String,Double> params=new LinkedHashMap<>(this.Params);
 		LinkedHashMap<String,Double> inputParams=new LinkedHashMap<>(params);
 		LinkedHashMap<String,Double> inputAnaParams=new LinkedHashMap<>(this.AnalyticalModelInternalParams);
@@ -391,7 +392,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			Thread[] threads=new Thread[this.timeBeans.size()];
 			int i=0;
 			for(String timeBeanId:this.timeBeans.keySet()) {
-				threads[i]=new Thread(new SUERunnable(this,timeBeanId,inputParams,inputAnaParams),timeBeanId);
+				threads[i]=new Thread(new SUERunnableEnoch(this,timeBeanId,inputParams,inputAnaParams,defaultPtModeRatio),timeBeanId);
 				i++;
 				outputLinkFlow.put(timeBeanId, new HashMap<Id<Link>, Double>());
 			}
@@ -1047,7 +1048,7 @@ public class CNLSUEModel implements AnalyticalModel{
  * @param params
  * @param anaParams
  * @param timeBeanId
- * @param defaultModeRatio
+ * @param defaultModeRatio: pt mode ratio in between 0 to 1
  */
 	public void singleTimeBeanTA(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId,double defaultModeRatio) {
 		HashMap<Id<TransitLink>, Double> linkTransitVolume;
@@ -1075,7 +1076,7 @@ public class CNLSUEModel implements AnalyticalModel{
 				}
 			}
 			if(shouldStop) {break;}
-			this.applyModalSplit(timeBeanId, .8);
+			this.applyModalSplit(timeBeanId, defaultModeRatio);
 			
 		}
 		
@@ -1295,6 +1296,39 @@ class SUERunnable implements Runnable{
 	@Override
 	public void run() {
 		this.Model.singleTimeBeanTA(params, internalParams, timeBeanId);
+		//this.Model.singleTimeBeanTAModeOut(params, internalParams, timeBeanId);
+	}
+	
+}
+
+/**
+ * This one is for enoch's testing purpose
+ * For multi-threaded SUE assignment in different time-bean
+ * @author Ashraf
+ *
+ */
+class SUERunnableEnoch implements Runnable{
+
+	private CNLSUEModel Model;
+	private LinkedHashMap<String,Double> params;
+	private LinkedHashMap<String, Double> internalParams;
+	private final String timeBeanId;
+	private double defaultPtModeSplit;
+	public SUERunnableEnoch(CNLSUEModel CNLMod,String timeBeanId,LinkedHashMap<String,Double> params,LinkedHashMap<String,Double>IntParams,double defaultPtModeSplit) {
+		this.Model=CNLMod;
+		this.timeBeanId=timeBeanId;
+		this.params=params;
+		this.internalParams=IntParams;
+		this.defaultPtModeSplit=defaultPtModeSplit;
+	}
+	
+	/**
+	 * this method will do the single time bean assignment 
+	 */
+	
+	@Override
+	public void run() {
+		this.Model.singleTimeBeanTA(params, internalParams, timeBeanId,this.defaultPtModeSplit);
 		//this.Model.singleTimeBeanTAModeOut(params, internalParams, timeBeanId);
 	}
 	
