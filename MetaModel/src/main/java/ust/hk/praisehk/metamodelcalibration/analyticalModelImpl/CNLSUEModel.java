@@ -47,6 +47,7 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.InternalParamCalibra
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 import ust.hk.praisehk.shortestpath.L2lLeastCostCalculatorFactory;
+import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
 
 
 public class CNLSUEModel implements AnalyticalModel{
@@ -127,6 +128,22 @@ public class CNLSUEModel implements AnalyticalModel{
 	public CNLSUEModel(Map<String, Tuple<Double, Double>> timeBean) {
 		this.timeBeans=timeBean;
 		this.defaultParameterInitiation(null);
+		for(String timeBeanId:this.timeBeans.keySet()) {
+			this.getDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
+			this.getCarDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
+			this.getTransitLinks().put(timeBeanId, new HashMap<Id<TransitLink>, TransitLink>());
+			this.beta.put(timeBeanId, new ArrayList<Double>());
+			this.error.put(timeBeanId, new ArrayList<Double>());
+			this.error1.put(timeBeanId, new ArrayList<Double>());
+			
+		}
+		logger.info("Analytical model created successfully.");
+		
+	}
+	
+	public CNLSUEModel(Config config,Map<String, Tuple<Double, Double>> timeBean) {
+		this.timeBeans=timeBean;
+		this.defaultParameterInitiation(config);
 		for(String timeBeanId:this.timeBeans.keySet()) {
 			this.getDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
 			this.getCarDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
@@ -282,9 +299,13 @@ public class CNLSUEModel implements AnalyticalModel{
 		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
 		this.getOdPairs().generateODpairsetWithoutRoutes();
 		this.generateRoute();
+		this.odPairs.generateRouteandLinkIncidence(0);
+		SignalFlowReductionGenerator sg=new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);
 		for(String s:this.timeBeans.keySet()) {
+			
 			this.getNetworks().put(s, new CNLNetwork(network));
+			this.getNetworks().get(s).updateGCRatio(sg);
 			this.performTransitVehicleOverlay(this.getNetworks().get(s),
 					transitSchedule,scenario.getTransitVehicles(),this.timeBeans.get(s).getFirst(),
 					this.timeBeans.get(s).getSecond());
@@ -347,6 +368,58 @@ public class CNLSUEModel implements AnalyticalModel{
 			throw new IllegalArgumentException("The parameters key do not match with the default parameter keys. Invalid Parameter!! Did you send the wrong parameter format?");
 		}
 		return this.perFormSUE(params, this.AnalyticalModelInternalParams);
+	}
+	
+	/**
+	 * This variation is for enoch
+	 * This will not perform sue only, rather genrate routeset close to matsim
+	 * The function will deploy a shortest path algorithm based on the output of the previous algorithm
+	 */
+	public AnalyticalModelODpairs generateMATSimRoutes() {
+		LinkedHashMap<String,Double> params=new LinkedHashMap<>(this.Params);
+		LinkedHashMap<String,Double> inputParams=new LinkedHashMap<>(params);
+		LinkedHashMap<String,Double> inputAnaParams=new LinkedHashMap<>(this.AnalyticalModelInternalParams);
+		Map<String,Map<Id<Link>,Double>> outputLinkFlow=new HashMap<>();
+		//this loop is for generating routeset
+		for(int j=0;j<100;j++) {
+			//Creating different threads for different time beans
+			double percentage=1;
+			if(j<10) {
+				percentage=Math.sqrt((20*j-j*j)/100);
+			}
+			this.loadDemand(percentage, percentage);
+			Thread[] threads=new Thread[this.timeBeans.size()];
+			int i=0;
+			for(String timeBeanId:this.timeBeans.keySet()) {
+				threads[i]=new Thread(new SUERunnable(this,timeBeanId,inputParams,inputAnaParams),timeBeanId);
+				i++;
+				outputLinkFlow.put(timeBeanId, new HashMap<Id<Link>, Double>());
+			}
+			//Starting the Threads
+			for(i=0;i<this.timeBeans.size();i++) {
+				threads[i].start();
+			}
+	
+			//joining the threads
+			for(i=0;i<this.timeBeans.size();i++) {
+				try {
+					threads[i].join();
+				} catch (InterruptedException e1) {
+					e1.printStackTrace();
+				}
+			}
+			for(String timeBeanId:this.timeBeans.keySet()) {
+				for(Id<Link> linkId:this.getNetworks().get(timeBeanId).getLinks().keySet()) {
+					outputLinkFlow.get(timeBeanId).put(linkId, 
+							((AnalyticalModelLink) this.getNetworks().get(timeBeanId).getLinks().get(linkId)).getLinkAADTVolume());
+				}
+			
+			}
+			this.odPairs.deleteCarRoutes(5);
+			this.generateRoute();
+			this.odPairs.generateRouteandLinkIncidence(0);
+		}
+		return this.odPairs;
 	}
 	
 	/**
@@ -944,7 +1017,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		for(int i=1;i<500;i++) {
 			//for(this.car)
 			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
-			this.generateRoute();
+		
 			linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams);
 			linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params,anaParams);
 			shouldStop=this.CheckConvergence(linkCarVolume, linkTransitVolume, this.getTollerance(), timeBeanId,i);
@@ -980,15 +1053,9 @@ public class CNLSUEModel implements AnalyticalModel{
 		HashMap<Id<TransitLink>, Double> linkTransitVolume;
 		HashMap<Id<Link>,Double> linkCarVolume;
 		boolean shouldStop=false;
-		double percentage=0;
-		this.generateRoute();
+		
 		for(int i=1;i<500;i++) {
-			if(i<10) {
-				percentage=Math.sqrt((20*i-i*i)/100.);
-			}else {
-				percentage=1;
-			}
-			this.loadDemand(percentage, 30);
+			
 			//for(this.car)
 			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
 			linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams);
@@ -1008,7 +1075,7 @@ public class CNLSUEModel implements AnalyticalModel{
 				}
 			}
 			if(shouldStop) {break;}
-			this.performModalSplit(params, anaParams, timeBeanId);
+			this.applyModalSplit(timeBeanId, .8);
 			
 		}
 		
@@ -1190,13 +1257,14 @@ public class CNLSUEModel implements AnalyticalModel{
 	public void generateRoute() {
 		L2lLeastCostCalculatorFactory shortestPathCalculatorFactory=new L2lLeastCostCalculatorFactory(scenario, Sets.newHashSet(TransportMode.car), this);
 		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()) {
-			for(String timeBean:this.timeBeans.keySet()) {
+				for(String timeBean:this.timeBeans.keySet()) {
 				double randStartTime=this.timeBeans.get(timeBean).getFirst()+Math.random()*(this.timeBeans.get(timeBean).getSecond()-this.timeBeans.get(timeBean).getFirst());
 				Link startLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getOriginNode().getCoord());
 				Link endLink=	NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getDestinationNode().getCoord());
 				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, randStartTime, null, null);
 				odPair.addCarRoute(new CNLRoute(path));
 			}
+
 		}
 	}
 	

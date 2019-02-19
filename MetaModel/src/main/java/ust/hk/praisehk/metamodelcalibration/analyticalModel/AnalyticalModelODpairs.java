@@ -120,6 +120,13 @@ public abstract class AnalyticalModelODpairs {
 		System.out.println("no of trips withoutRoutes = "+tripsWithoutRoute);
 	}
 
+	public void deleteCarRoutes(int RemainingRouteNo) {
+		for(Id<AnalyticalModelODpair> odId:this.ODpairset.keySet()) {
+			this.ODpairset.get(odId).deleteCarRoute(RemainingRouteNo);
+		}
+		this.generateRouteandLinkIncidence(0);
+	}
+	
 	public void generateODpairsetWithoutRoutes(){
 		ArrayList<Trip> trips=new ArrayList<>();
 		

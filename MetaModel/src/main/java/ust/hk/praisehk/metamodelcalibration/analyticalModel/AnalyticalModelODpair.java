@@ -271,8 +271,7 @@ public class AnalyticalModelODpair {
 		}else{ //not a new route, This should not happen in this case or should it???
 			this.routeset.put(r.getRouteId(), routeset.get(r.getRouteId())+1);
 		}
-		this.generateRoutes(0);
-		this.generateLinkIncidence();
+		
 	}
 	
 	/**
@@ -469,7 +468,38 @@ public class AnalyticalModelODpair {
 		return TrRouteUtility.get(timeBeanId);
 	}
 	
-
+	/**
+	 * This function will be used to delete some routes. This requires recreating the final routeset 
+	 * @param remaingingRouteNo
+	 */
+	public void deleteCarRoute(int remaingingRouteNo) {
+		if(this.routeset.size()<=remaingingRouteNo) {
+			return;
+		}
+		Map<Id<AnalyticalModelRoute>,Double> logSumRouteUtility=new HashMap<>();
+		for(String s:this.timeBean.keySet()) {
+			for(Id<AnalyticalModelRoute> routeId:this.RouteUtility.get(s).keySet()) {
+				if(logSumRouteUtility.containsKey(routeId)) {
+					logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.log(this.RouteUtility.get(s).get(routeId)));
+				}else {
+					logSumRouteUtility.put(routeId,Math.log(this.RouteUtility.get(s).get(routeId)));
+				}
+			}
+			
+		}
+		ArrayList<Double> orderedRouteUtility;
+		orderedRouteUtility=new ArrayList<Double>(logSumRouteUtility.values());
+		Collections.sort(orderedRouteUtility);
+		Collections.reverse(orderedRouteUtility);
+		double criticalUtility=orderedRouteUtility.get(remaingingRouteNo);
+		for(Id<AnalyticalModelRoute>routeId:logSumRouteUtility.keySet()) {
+			if(logSumRouteUtility.get(routeId)<criticalUtility) {
+				this.routeset.remove(routeId);
+				this.RoutesWithDescription.remove(routeId);
+			}
+		}
+		
+	}
 
 	public double getExpectedMaximumCarUtility(LinkedHashMap<String,Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
 		if(this.RouteUtility.get(timeBeanId).size()==0) {
