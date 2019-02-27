@@ -296,6 +296,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			Scenario scenario,Map<String,FareCalculator> fareCalculator) {
 		//this.setLastPopulation(population);
 		//System.out.println("");
+		this.scenario=scenario;
 		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
 		this.getOdPairs().generateODpairsetWithoutRoutes();
 		this.generateRoute();
@@ -312,7 +313,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			this.getTransitLinks().put(s,this.getOdPairs().getTransitLinks(this.timeBeans,s));
 		}
 		this.fareCalculator=fareCalculator;
-		
+		this.scenario=scenario;
 		
 		this.carDemand.size();
 		

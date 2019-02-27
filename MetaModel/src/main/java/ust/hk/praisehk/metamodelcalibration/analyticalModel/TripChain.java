@@ -103,7 +103,7 @@ public abstract class TripChain{
 			trip.setStartTime(activitylist.get(i).getEndTime());
 			trip.setEndTime(trip.getStartTime()+leglist.get(i).getTravelTime());
 			trip.setMode(leglist.get(i).getMode());
-			if(leglist.get(i).getMode().equals("car")){
+			if(leglist.get(i).getMode().equals("car") && leglist.get(i).getRoute()!=null){
 				trip.setRoute(this.createRoute((leglist.get(i).getRoute())));
 				
 			}else if(leglist.get(i).getMode().equals("pt")){

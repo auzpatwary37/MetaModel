@@ -43,6 +43,7 @@ public class CustomNetworkTurnInfoBuilder implements NetworkTurnInfoBuilderI {
 
 		if (scenario.getConfig().network().getLaneDefinitionsFile() != null || //
 				scenario.getConfig().qsim().isUseLanes()) {
+			scenario.getLanes();
 			Lanes ld = scenario.getLanes();
 			Map<Id<Link>, List<TurnInfo>> lanesTurnInfoMap = createTurnInfos(ld);
 			mergeTurnInfoMaps(allowedInLinkTurnInfoMap, lanesTurnInfoMap);
