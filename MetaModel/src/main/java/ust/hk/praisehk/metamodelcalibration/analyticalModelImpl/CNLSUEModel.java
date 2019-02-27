@@ -299,8 +299,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		this.scenario=scenario;
 		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
 		this.getOdPairs().generateODpairsetWithoutRoutes();
-		this.generateRoute();
-		this.odPairs.generateRouteandLinkIncidence(0);
+		
 		SignalFlowReductionGenerator sg=new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);
 		for(String s:this.timeBeans.keySet()) {
@@ -312,6 +311,8 @@ public class CNLSUEModel implements AnalyticalModel{
 					this.timeBeans.get(s).getSecond());
 			this.getTransitLinks().put(s,this.getOdPairs().getTransitLinks(this.timeBeans,s));
 		}
+		this.generateRoute();
+		this.odPairs.generateRouteandLinkIncidence(0);
 		this.fareCalculator=fareCalculator;
 		this.scenario=scenario;
 		
@@ -1264,7 +1265,8 @@ public class CNLSUEModel implements AnalyticalModel{
 				Link startLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getOriginNode().getCoord());
 				Link endLink=	NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getDestinationNode().getCoord());
 				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, randStartTime, null, null);
-				odPair.addCarRoute(new CNLRoute(path));
+				//System.out.println("");
+				odPair.addCarRoute(new CNLRoute(path,startLink,endLink));
 			}
 
 		}

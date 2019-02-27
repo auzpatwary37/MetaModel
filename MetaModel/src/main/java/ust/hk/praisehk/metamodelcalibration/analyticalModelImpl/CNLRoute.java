@@ -35,8 +35,8 @@ public class CNLRoute implements AnalyticalModelRoute{
 		this.route=r;
 	}
 	
-	public CNLRoute(Path p) {
-		this(AnalyticalModelRoute.PathToRouteConverter(p));
+	public CNLRoute(Path p,Link startLink, Link endLink) {
+		this(AnalyticalModelRoute.PathToRouteConverter(p,startLink,endLink));
 		
 	}
 	

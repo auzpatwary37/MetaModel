@@ -14,9 +14,9 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.network.algorithms.NetworkExpandNode.TurnInfo;
 import org.matsim.core.network.algorithms.NetworkTurnInfoBuilderI;
-import org.matsim.lanes.data.Lane;
-import org.matsim.lanes.data.Lanes;
-import org.matsim.lanes.data.LanesToLinkAssignment;
+import org.matsim.lanes.Lane;
+import org.matsim.lanes.Lanes;
+import org.matsim.lanes.LanesToLinkAssignment;
 
 /**
  * The only thing this turn info do is consider the 'bus' mode and 'car' mode is

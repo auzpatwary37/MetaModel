@@ -145,23 +145,10 @@
 			<version>1.1.0</version>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/org.matsim/matsim -->
-		<dependency>
-			<groupId>org.matsim</groupId>
-			<artifactId>matsim</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-
 
 		
 
-		<!-- https://mvnrepository.com/artifact/org.matsim.contrib/signals -->
-		<dependency>
-			<groupId>org.matsim.contrib</groupId>
-			<artifactId>signals</artifactId>
-			<version>0.10.0</version>
-		</dependency>
-
+		
 		
 
 		<dependency>

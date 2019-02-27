@@ -50,20 +50,19 @@ public interface AnalyticalModelRoute{
 	public abstract Id<AnalyticalModelRoute> getRouteId();
 	public abstract ArrayList<Id<Link>> getLinkIds();
 	
-	public static Route PathToRouteConverter(Path p) {
-		Id<Link> startLinkId=null;
-		Id<Link>endLinkId=null;
+	public static Route PathToRouteConverter(Path p, Link startLink, Link endLink) {
+		Id<Link> startLinkId=startLink.getId();
+		Id<Link>endLinkId=endLink.getId();
 		List<Id<Link>>linkList=new ArrayList<>();
 		for(int i=0;i<p.links.size();i++) {
-			if(i==0) {
-				startLinkId=p.links.get(i).getId();
-			}else if(i>0 &&i<p.links.size()-1) {
-				linkList.add(p.links.get(i).getId());
-			}else if(i==p.links.size()-1) {
-				endLinkId=p.links.get(i).getId();
-			}
+			
+			linkList.add(p.links.get(i).getId());
+			
 		}
 		Route r=RouteUtils.createLinkNetworkRouteImpl(startLinkId, linkList, endLinkId);
+		if(endLinkId.equals(null)) {
+		System.out.println("Debug point");
+		}
 		return r;
 	}
 
