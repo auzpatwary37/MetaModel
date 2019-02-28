@@ -328,6 +328,77 @@ public abstract class AnalyticalModelODpairs {
 		System.out.println("no of trips withoutRoutes = "+tripsWithoutRoute);
 	}
 	
+	public void generateODpairsetWithoutRoutesSubPop(Network odNetwork){
+		ArrayList<Trip> trips=new ArrayList<>();
+		
+		if(odNetwork==null) {
+			odNetwork=this.network;
+		}
+		/**
+		 * Experimental Parallel
+		 */
+		boolean multiThread=true;
+		
+		if(multiThread==true) {
+			ArrayList<tripsCreatorFromPlan> threadrun=new ArrayList<>();
+			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(this.population.getPersons().values()), (int)(this.population.getPersons().values().size()/16));
+			Thread[] threads=new Thread[personList.size()];
+			for(int i=0;i<personList.size();i++) {
+				threadrun.add(new tripsCreatorFromPlan(personList.get(i),this));
+				threads[i]=new Thread(threadrun.get(i));
+			}
+			for(int i=0;i<personList.size();i++) {
+				threads[i].start();
+			}
+
+			for(int i=0;i<personList.size();i++) {
+				try {
+					threads[i].join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			for(tripsCreatorFromPlan t:threadrun) {
+				trips.addAll((ArrayList<Trip>)t.getTrips());
+			}
+		}else {
+			for (Id<Person> personId:population.getPersons().keySet()){
+				TripChain tripchain=this.getNewTripChain(population.getPersons().get(personId).getSelectedPlan());
+				String s=(String) this.population.getPersonAttributes().getAttribute(personId.toString(), "SUBPOP_ATTRIB_NAME");
+				for(Trip t:(ArrayList<Trip>)tripchain.getTrips()) {
+					t.setSubPopulationName(s);
+				}
+				trips.addAll( tripchain.getTrips());
+			}
+		}
+		double tripsWithoutRoute=0;
+		for (Trip trip:trips){
+			double pcu=1;
+			Vehicle v=this.scenario.getVehicles().getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
+			if(v!=null) {
+				pcu=v.getType().getPcuEquivalents();
+			}
+			trip.setCarPCU(pcu);
+//			if(trip.getRoute()!=null ||trip.getTrRoute()!=null) {
+				Id<AnalyticalModelODpair> ODId=trip.generateODpairId(network);
+				if (ODpairset.containsKey(ODId)){
+					ODpairset.get(ODId).addtripWithoutRoute(trip);
+				}else{
+					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),network,this.timeBean,trip.getSubPopulationName());
+					odpair.addtripWithoutRoute(trip);
+					ODpairset.put(trip.generateODpairId(network), odpair);
+				}
+//			}else {
+//				if(!trip.getMode().equals("transit_walk")) {
+//					//throw new IllegalArgumentException("WAit");
+//				}
+//				tripsWithoutRoute++;
+//			}
+		}
+		//System.out.println("no of trips withoutRoutes = "+tripsWithoutRoute);
+	}
+	
 }
 
 

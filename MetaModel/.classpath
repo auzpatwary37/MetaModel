@@ -31,5 +31,29 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/matsim"/>
 	<classpathentry kind="src" path="/MATSim-HK"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/signals"/>
+	<classpathentry excluding="**" kind="src" output="target/test-classes" path="src/test/resources">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/h/.m2/repository/org/matsim/contrib/cadytsIntegration/0.10.1/cadytsIntegration-0.10.1.jar" sourcepath="C:/Users/h/.m2/repository/org/matsim/contrib/cadytsIntegration/0.10.1/cadytsIntegration-0.10.1-sources.jar">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="maven.groupId" value="org.matsim.contrib"/>
+			<attribute name="maven.artifactId" value="cadytsIntegration"/>
+			<attribute name="maven.version" value="0.10.1"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/h/.m2/repository/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar" sourcepath="C:/Users/h/.m2/repository/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1-sources.jar">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="maven.groupId" value="org.apache.commons"/>
+			<attribute name="maven.artifactId" value="commons-math3"/>
+			<attribute name="maven.version" value="3.6.1"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

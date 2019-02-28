@@ -64,7 +64,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * 
 	 */
 	
-		private final Logger logger=Logger.getLogger(CNLSUEModel.class);
+		protected final Logger logger=Logger.getLogger(CNLSUEModel.class);
 		private String fileLoc="traget/";
 		public String getFileLoc() {
 			return fileLoc;
@@ -76,7 +76,7 @@ public class CNLSUEModel implements AnalyticalModel{
 
 		private Map<String,Double> consecutiveSUEErrorIncrease=new ConcurrentHashMap<>();
 		private LinkedHashMap<String,Double> AnalyticalModelInternalParams=new LinkedHashMap<>();
-		private LinkedHashMap<String,Double> Params=new LinkedHashMap<>();
+		protected LinkedHashMap<String,Double> Params=new LinkedHashMap<>();
 		private LinkedHashMap<String,Tuple<Double,Double>> AnalyticalModelParamsLimit=new LinkedHashMap<>();
 		
 		
@@ -88,19 +88,19 @@ public class CNLSUEModel implements AnalyticalModel{
 		private double tolleranceLink=0.1;
 		//user input
 	
-		private Map<String, Tuple<Double,Double>> timeBeans;
+		protected Map<String, Tuple<Double,Double>> timeBeans;
 		
 		//MATSim Input
 		private Map<String, AnalyticalModelNetwork> networks=new ConcurrentHashMap<>();
 		private TransitSchedule ts;
-		private Scenario scenario;
+		protected Scenario scenario;
 		private Population population;
 		protected Map<String,FareCalculator> fareCalculator=new HashMap<>();
 		
 		//Used Containers
-		private Map<String,ArrayList<Double>> beta=new ConcurrentHashMap<>(); //This is related to weighted MSA of the SUE
-		private Map<String,ArrayList<Double>> error=new ConcurrentHashMap<>();
-		private Map<String,ArrayList<Double>> error1=new ConcurrentHashMap<>();//This is related to weighted MSA of the SUE
+		protected Map<String,ArrayList<Double>> beta=new ConcurrentHashMap<>(); //This is related to weighted MSA of the SUE
+		protected Map<String,ArrayList<Double>> error=new ConcurrentHashMap<>();
+		protected Map<String,ArrayList<Double>> error1=new ConcurrentHashMap<>();//This is related to weighted MSA of the SUE
 		
 		//TimebeanId vs demands map
 		private Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> Demand=new ConcurrentHashMap<>();//Holds ODpair based demand
@@ -390,7 +390,10 @@ public class CNLSUEModel implements AnalyticalModel{
 			if(j<10) {
 				percentage=Math.sqrt((20*j-j*j)/100);
 			}
-			this.loadDemand(percentage, percentage);
+			this.loadDemand(percentage, 1-defaultPtModeRatio);
+			for(String s:this.timeBeans.keySet()) {
+				this.applyModalSplit(s, defaultPtModeRatio);
+			}
 			Thread[] threads=new Thread[this.timeBeans.size()];
 			int i=0;
 			for(String timeBeanId:this.timeBeans.keySet()) {
@@ -937,10 +940,10 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 	}
 	
-	protected void applyModalSplit(String timeBeanId,double defaultptMode) {
-		if(defaultptMode>=0 &&defaultptMode<=100 ) {
-			if(defaultptMode>1) {
-				defaultptMode=defaultptMode/100;
+	protected void applyModalSplit(String timeBeanId,double defaultptModeshare) {
+		if(defaultptModeshare>=0 &&defaultptModeshare<=100 ) {
+			if(defaultptModeshare>1) {
+				defaultptModeshare=defaultptModeshare/100;
 			}
 		}else {
 			throw new IllegalArgumentException("default pt mode ratio cannot be larger than 100");
@@ -948,9 +951,14 @@ public class CNLSUEModel implements AnalyticalModel{
 		
 		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()){
 			double demand=this.getDemand().get(timeBeanId).get(odPair.getODpairId());
-			if(demand!=0) { 
-				Double cardemand=demand*defaultptMode;
-				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),cardemand);
+			if(demand!=0) {
+				if(!odPair.getODpairId().toString().contains("GV")) {
+					Double cardemand=demand*defaultptModeshare;
+					this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),cardemand);
+				}else {
+					Double cardemand=demand;
+					this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),cardemand);
+				}
 			}
 		}
 		
@@ -1000,6 +1008,10 @@ public class CNLSUEModel implements AnalyticalModel{
 				}else {
 					this.Demand.get(timeBean).put(odPairId, this.originalDemand.get(timeBean).get(odPairId)*percentage/100);
 					this.carDemand.get(timeBean).put(odPairId, this.Demand.get(timeBean).get(odPairId)*initialCarDemandPercentage/100);
+				}
+				if(odPairId.toString().contains("GV")) {
+					this.Demand.get(timeBean).put(odPairId, this.originalDemand.get(timeBean).get(odPairId)*percentage/100);
+					this.carDemand.get(timeBean).put(odPairId, this.Demand.get(timeBean).get(odPairId));
 				}
 			}
 		}

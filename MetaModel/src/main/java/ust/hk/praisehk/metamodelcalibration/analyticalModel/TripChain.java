@@ -99,7 +99,9 @@ public abstract class TripChain{
 		for(int i=0;i<activitylist.size()-1;i++){
 			Trip trip=this.createBlankTrip();
 			trip.setAct1coord(activitylist.get(i).getCoord());
+			trip.setStartLinkId(activitylist.get(i).getLinkId());
 			trip.setAct2coord(activitylist.get(i+1).getCoord());
+			trip.setEndLinkId(activitylist.get(i+1).getLinkId());
 			trip.setStartTime(activitylist.get(i).getEndTime());
 			trip.setEndTime(trip.getStartTime()+leglist.get(i).getTravelTime());
 			trip.setMode(leglist.get(i).getMode());
@@ -116,7 +118,7 @@ public abstract class TripChain{
 			//System.out.println();
 			if(trip.getRoute()==null && trip.getTrRoute()==null && !leglist.get(i).getMode().equals("transit_walk") && !leglist.get(i).getMode().equals("walk")) {
 				
-				logger.warn("No routes!!! Discarding trip. See if routes are generated properly.");
+				//logger.warn("No routes!!! Discarding trip. See if routes are generated properly.");
 			}
 			
 			trip.setPersonId(PersonId);

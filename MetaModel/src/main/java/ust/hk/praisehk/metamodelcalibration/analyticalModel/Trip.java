@@ -3,6 +3,7 @@ package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.Person;
@@ -41,6 +42,8 @@ public class Trip {
 	private String subPopulationName=null;
 	private static final Logger logger=Logger.getLogger(Trip.class);
 	private double CarPCU=1;
+	private Id<Link> startLinkId;
+	private Id<Link> endLinkId;
 	/**
 	 * 
 	 * @param line - containing all the data probably from a file (.csv)
@@ -97,6 +100,22 @@ public class Trip {
 	}
 	
 	
+	public Id<Link> getStartLinkId() {
+		return startLinkId;
+	}
+
+	public void setStartLinkId(Id<Link> startLinkId) {
+		this.startLinkId = startLinkId;
+	}
+
+	public Id<Link> getEndLinkId() {
+		return endLinkId;
+	}
+
+	public void setEndLinkId(Id<Link> endLinkId) {
+		this.endLinkId = endLinkId;
+	}
+
 	/**
 	 * ----------------------------------Getter and Setter---------------------------------------
 	 * 

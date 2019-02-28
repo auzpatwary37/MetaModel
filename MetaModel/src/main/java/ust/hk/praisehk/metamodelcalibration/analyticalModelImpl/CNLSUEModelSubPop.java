@@ -3,7 +3,9 @@ package ust.hk.praisehk.metamodelcalibration.analyticalModelImpl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
@@ -17,9 +19,11 @@ import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
+import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpair;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.calibrator.ParamReader;
+import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
 
 
 /**
@@ -45,6 +49,68 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		this.pReader=preader;
 		super.setDefaultParameters(pReader.ScaleUp(pReader.getDefaultParam()));
 		this.setTollerance(0.1);
+	}
+	
+	public CNLSUEModelSubPop(Config config,Map<String, Tuple<Double, Double>> timeBean,ArrayList<String>subPopNames) {
+		super(timeBean);
+		this.subPopulationName=subPopNames;
+		this.defaultParameterInitiation(config);
+		for(String timeBeanId:timeBean.keySet()) {
+			this.getDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
+			this.getCarDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
+			this.getTransitLinks().put(timeBeanId, new HashMap<Id<TransitLink>, TransitLink>());
+			super.beta.put(timeBeanId, new ArrayList<Double>());
+			this.error.put(timeBeanId, new ArrayList<Double>());
+			this.error1.put(timeBeanId, new ArrayList<Double>());
+			
+		}
+		logger.info("Analytical model created successfully.");
+		
+	}
+	
+	private void defaultParameterInitiation(Config config){
+		if(this.subPopulationName.size()!=0) {
+			for(String subPop:this.subPopulationName) {
+				if(!subPop.contains("GV")) {
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofTravelCarName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("car").getMarginalUtilityOfTraveling());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofDistanceCarName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("car").getMarginalUtilityOfDistance());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofMoneyName,config.planCalcScore().getOrCreateScoringParameters(subPop).getMarginalUtilityOfMoney());
+					super.Params.put(subPop+" "+AnalyticalModel.DistanceBasedMoneyCostCarName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("car").getMonetaryDistanceRate());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofTravelptName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("pt").getMarginalUtilityOfTraveling());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityOfDistancePtName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("pt").getMonetaryDistanceRate());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofWaitingName,config.planCalcScore().getOrCreateScoringParameters(subPop).getMarginalUtlOfWaitingPt_utils_hr());
+					super.Params.put(subPop+" "+AnalyticalModel.UtilityOfLineSwitchName,config.planCalcScore().getOrCreateScoringParameters(subPop).getUtilityOfLineSwitch());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityOfWalkingName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("walk").getMarginalUtilityOfTraveling());
+					super.Params.put(subPop+" "+AnalyticalModel.DistanceBasedMoneyCostWalkName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("walk").getMonetaryDistanceRate());
+					super.Params.put(subPop+" "+AnalyticalModel.ModeConstantPtname,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("pt").getConstant());
+					super.Params.put(subPop+" "+AnalyticalModel.ModeConstantCarName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("car").getConstant());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofPerformName,config.planCalcScore().getOrCreateScoringParameters(subPop).getPerforming_utils_hr());
+				
+				}else {
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofTravelCarName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("car").getMarginalUtilityOfTraveling());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofDistanceCarName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("car").getMarginalUtilityOfDistance());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofMoneyName,config.planCalcScore().getOrCreateScoringParameters(subPop).getMarginalUtilityOfMoney());
+					super.Params.put(subPop+" "+AnalyticalModel.DistanceBasedMoneyCostCarName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("car").getMonetaryDistanceRate());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityOfWalkingName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("walk").getMarginalUtilityOfTraveling());
+					super.Params.put(subPop+" "+AnalyticalModel.DistanceBasedMoneyCostWalkName,config.planCalcScore().getOrCreateScoringParameters(subPop).getOrCreateModeParams("walk").getMonetaryDistanceRate());
+					super.Params.put(subPop+" "+AnalyticalModel.MarginalUtilityofPerformName,config.planCalcScore().getOrCreateScoringParameters(subPop).getPerforming_utils_hr());
+				}
+			}
+			}else {
+				super.Params.put(AnalyticalModel.MarginalUtilityofTravelCarName,config.planCalcScore().getOrCreateModeParams("car").getMarginalUtilityOfTraveling());
+				super.Params.put(AnalyticalModel.MarginalUtilityofDistanceCarName,config.planCalcScore().getOrCreateModeParams("car").getMarginalUtilityOfDistance());
+				super.Params.put(AnalyticalModel.MarginalUtilityofMoneyName,config.planCalcScore().getMarginalUtilityOfMoney());
+				super.Params.put(AnalyticalModel.DistanceBasedMoneyCostCarName,config.planCalcScore().getOrCreateModeParams("car").getMonetaryDistanceRate());
+				super.Params.put(AnalyticalModel.MarginalUtilityofTravelptName,config.planCalcScore().getOrCreateModeParams("pt").getMarginalUtilityOfTraveling());
+				super.Params.put(AnalyticalModel.MarginalUtilityOfDistancePtName,config.planCalcScore().getOrCreateModeParams("pt").getMonetaryDistanceRate());
+				super.Params.put(AnalyticalModel.MarginalUtilityofWaitingName,config.planCalcScore().getMarginalUtlOfWaitingPt_utils_hr());
+				super.Params.put(AnalyticalModel.UtilityOfLineSwitchName,config.planCalcScore().getUtilityOfLineSwitch());
+				super.Params.put(AnalyticalModel.MarginalUtilityOfWalkingName,config.planCalcScore().getOrCreateModeParams("walk").getMarginalUtilityOfTraveling());
+				super.Params.put(AnalyticalModel.DistanceBasedMoneyCostWalkName,config.planCalcScore().getOrCreateModeParams("walk").getMonetaryDistanceRate());
+				super.Params.put(AnalyticalModel.ModeConstantPtname,config.planCalcScore().getOrCreateModeParams("pt").getConstant());
+				super.Params.put(AnalyticalModel.ModeConstantCarName,config.planCalcScore().getOrCreateModeParams("car").getConstant());
+				super.Params.put(AnalyticalModel.MarginalUtilityofPerformName,config.planCalcScore().getPerforming_utils_hr());
+			}
 	}
 	
 	@Override
@@ -108,6 +174,69 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 			}
 		}
 		return specificParam;
+	}
+	
+	
+	@Override
+	public void generateRoutesAndODWithoutRoute(Population population,Network network,TransitSchedule transitSchedule,
+			Scenario scenario,Map<String,FareCalculator> fareCalculator) {
+		this.setLastPopulation(population);
+		//System.out.println("");
+		this.scenario=scenario;
+		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
+		this.getOdPairs().generateODpairsetWithoutRoutesSubPop(null);
+		
+		SignalFlowReductionGenerator sg=new SignalFlowReductionGenerator(scenario);
+		//this.getOdPairs().generateRouteandLinkIncidence(0.);
+		for(String s:this.timeBeans.keySet()) {
+			
+			this.getNetworks().put(s, new CNLNetwork(network));
+			this.getNetworks().get(s).updateGCRatio(sg);
+			this.performTransitVehicleOverlay(this.getNetworks().get(s),
+					transitSchedule,scenario.getTransitVehicles(),this.timeBeans.get(s).getFirst(),
+					this.timeBeans.get(s).getSecond());
+			this.getTransitLinks().put(s,this.getOdPairs().getTransitLinks(this.timeBeans,s));
+		}
+		this.generateRoute();
+		this.getOdPairs().generateRouteandLinkIncidence(0);
+		this.fareCalculator=fareCalculator;
+		
+		
+		this.setTs(transitSchedule);
+		for(String timeBeanId:this.timeBeans.keySet()) {
+			this.getConsecutiveSUEErrorIncrease().put(timeBeanId, 0.);
+			this.getDemand().put(timeBeanId, new HashMap<>(this.getOdPairs().getdemand(timeBeanId)));
+			for(Id<AnalyticalModelODpair> odId:this.getDemand().get(timeBeanId).keySet()) {
+				double totalDemand=this.getDemand().get(timeBeanId).get(odId);
+				if(this.getOdPairs().getODpairset().get(odId).getTrRoutes().isEmpty()) {
+					this.getCarDemand().get(timeBeanId).put(odId, totalDemand);
+				}else {
+					this.getCarDemand().get(timeBeanId).put(odId, 0.5*totalDemand);
+			
+				}
+				if(this.getOdPairs().getODpairset().get(odId).getSubPopulation().contains("GV")) {
+					this.getCarDemand().get(timeBeanId).put(odId, totalDemand);
+				}
+			}
+			logger.info("Startig from 0.5 auto and transit ratio");
+			if(this.getDemand().get(timeBeanId).size()!=this.getCarDemand().get(timeBeanId).size()) {
+				logger.error("carDemand and total demand do not have same no of OD pair. This should not happen. Please check");
+			}
+		}
+		
+		int agentTrip=0;
+		int matsimTrip=0;
+		int agentDemand=0;
+		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()) {
+			agentTrip+=odPair.getAgentCounter();
+			for(String s:odPair.getTimeBean().keySet()) {
+				agentDemand+=odPair.getDemand().get(s);
+			}
+			
+		}
+		logger.info("Demand total = "+agentDemand);
+		logger.info("Total Agent Trips = "+agentTrip);
+	
 	}
 	
 	@Override
@@ -181,6 +310,8 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		}
 		}
 	}
+	
+	
 	
 	
 	

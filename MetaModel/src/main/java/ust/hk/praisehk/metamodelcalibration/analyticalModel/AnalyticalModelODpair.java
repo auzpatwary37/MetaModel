@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
@@ -66,6 +67,9 @@ public class AnalyticalModelODpair {
 	private String subPopulation;
 	private double PCU=1;
 	private int minRoute=5;
+	private LinkedHashMap<Id<Link>,Integer> startLinkIds=new LinkedHashMap<>();
+	private LinkedHashMap<Id<Link>,Integer> endLinkIds=new LinkedHashMap<>();
+	private int totalTrip=0;
 	//TODO:Shift Node Based Coordinates to FacilityBased Coordinates
 	
 	/**
@@ -304,6 +308,23 @@ public class AnalyticalModelODpair {
 		
 //		if(trip.getRoute()!=null){
 			demand.put(timeId, demand.get(timeId)+1);
+			
+			if(trip.getStartLinkId()!=null) {
+				if(this.startLinkIds.containsKey(trip.getStartLinkId())) {
+					this.startLinkIds.put(trip.getStartLinkId(),this.startLinkIds.get(trip.getStartLinkId())+1);
+				}else {
+					this.startLinkIds.put(trip.getStartLinkId(),1);
+				}
+			}
+			
+			if(trip.getEndLinkId()!=null) {
+				if(this.endLinkIds.containsKey(trip.getEndLinkId())) {
+					this.endLinkIds.put(trip.getStartLinkId(),this.endLinkIds.get(trip.getEndLinkId())+1);
+				}else {
+					this.endLinkIds.put(trip.getEndLinkId(),1);
+				}
+			}
+			totalTrip++;
 //			this.agentCARCounter+=trip.getCarPCU();
 //			if(!routeset.containsKey(trip.getRoute().getRouteId())){//A new route 
 //				routeset.put(trip.getRoute().getRouteId(),1);
@@ -342,6 +363,49 @@ public class AnalyticalModelODpair {
 		return routeset;
 	}
 
+	public Id<Link> getStartLinkId(){
+		int[] index=new int[this.startLinkIds.size()];
+		double[] prob=new double[this.startLinkIds.size()];
+		int i=0;
+		for(Id<Link> linkId:this.startLinkIds.keySet()) {
+			index[i]=i;
+			prob[i]=this.startLinkIds.get(linkId)*1./this.totalTrip;
+			i++;
+		}
+		EnumeratedIntegerDistribution dist=new EnumeratedIntegerDistribution(index,prob);
+		int ind=dist.sample();
+		i=0;
+		Id<Link> returnId=null;
+		for(Id<Link> linkId:this.startLinkIds.keySet()) {
+			if(i==ind) {
+				returnId= linkId;
+			}
+			i++;
+		}
+		return returnId;
+	}
+	
+	public Id<Link> getendLinkId(){
+		int[] index=new int[this.endLinkIds.size()];
+		double[] prob=new double[this.endLinkIds.size()];
+		int i=0;
+		for(Id<Link> linkId:this.endLinkIds.keySet()) {
+			index[i]=i;
+			prob[i]=this.endLinkIds.get(linkId)*1./this.totalTrip;
+			i++;
+		}
+		EnumeratedIntegerDistribution dist=new EnumeratedIntegerDistribution(index,prob);
+		int ind=dist.sample();
+		i=0;
+		Id<Link> returnId=null;
+		for(Id<Link> linkId:this.endLinkIds.keySet()) {
+			if(i==ind) {
+				returnId= linkId;
+			}
+			i++;
+		}
+		return returnId;
+	}
 	
 	/**
 	 * For future expansion 
