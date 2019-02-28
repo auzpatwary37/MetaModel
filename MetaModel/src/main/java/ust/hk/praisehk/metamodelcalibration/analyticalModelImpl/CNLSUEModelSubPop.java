@@ -184,7 +184,14 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		//System.out.println("");
 		this.scenario=scenario;
 		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
-		this.getOdPairs().generateODpairsetWithoutRoutesSubPop(null);
+		
+		//trial
+		Config odConfig=ConfigUtils.createConfig();
+		odConfig.network().setInputFile("data/odNetTPUSB.xml");
+		Scenario odScenario=ScenarioUtils.loadScenario(odConfig);
+		Network net=odScenario.getNetwork();
+		
+		this.getOdPairs().generateODpairsetWithoutRoutesSubPop(net);
 		
 		SignalFlowReductionGenerator sg=new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);

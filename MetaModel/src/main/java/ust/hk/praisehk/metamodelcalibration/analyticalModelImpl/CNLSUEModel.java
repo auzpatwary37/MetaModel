@@ -1274,8 +1274,20 @@ public class CNLSUEModel implements AnalyticalModel{
 		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()) {
 				for(String timeBean:this.timeBeans.keySet()) {
 				double randStartTime=this.timeBeans.get(timeBean).getFirst()+Math.random()*(this.timeBeans.get(timeBean).getSecond()-this.timeBeans.get(timeBean).getFirst());
-				Link startLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getOriginNode().getCoord());
-				Link endLink=	NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getDestinationNode().getCoord());
+				Link startLink=null;
+				Link endLink=null;	
+				if(odPair.getStartLinkId()!=null) {
+					startLink=this.networks.get(timeBean).getLinks().get(odPair.getStartLinkId());
+				}else {
+					startLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getOriginNode().getCoord());
+				}
+				
+				if(odPair.getendLinkId()!=null) {
+					endLink=this.networks.get(timeBean).getLinks().get(odPair.getendLinkId());
+				}else {
+					endLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getDestinationNode().getCoord());
+				}
+				
 				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, randStartTime, null, null);
 				//System.out.println("");
 				odPair.addCarRoute(new CNLRoute(path,startLink,endLink));
