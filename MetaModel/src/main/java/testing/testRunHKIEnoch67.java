@@ -49,8 +49,6 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 	subPopNames.add(GVChange_NAME);
 	subPopNames.add(GVFixed_NAME);
 	
-	
-	
 	Config configGV = ConfigUtils.createConfig();
 	ConfigUtils.loadConfig(configGV, "data/config_Ashraf.xml");
 	for (ActivityParams act: configGV.planCalcScore().getActivityParams()) {

@@ -34,7 +34,7 @@ public class AnalyticalModelODpair {
 		
 	private double agentCARCounter=0;
 	private double agentTrCounter=0;
-	private double ExpectedMaximumCarUtility;
+	//private double ExpectedMaximumCarUtility;
 	private double ExpectedMaximumTransitUtility;
 	private List<Id<Person>> personIdList=new ArrayList<>();
 	
@@ -200,7 +200,7 @@ public class AnalyticalModelODpair {
 		}
 		this.agentCARCounter=0;
 		this.agentTrCounter=0;
-		this.ExpectedMaximumCarUtility=0;
+		//this.ExpectedMaximumCarUtility=0;
 		this.ExpectedMaximumTransitUtility=0;
 		this.RouteUtility.clear();
 		this.TrRouteUtility.clear();
@@ -499,8 +499,6 @@ public class AnalyticalModelODpair {
 		this.TrRouteUtility.get(timeBeanId).put(id, utility);
 	}
 	
-	
-	
 	public HashMap<Id<AnalyticalModelRoute>, Double> getRouteUtility(String timeBeanId) {
 		return RouteUtility.get(timeBeanId);
 	}
@@ -518,46 +516,45 @@ public class AnalyticalModelODpair {
 			return;
 		}
 		boolean demandZero=true;
-		
-		for(String s:this.demand.keySet()) {
-			if (this.demand.get(s)!=0) {
+		for(Double demandValue:this.demand.values()) { //Check if there isn't any demand
+			if (demandValue > 0) {
 				demandZero=false;
 				break;
 			}
 		}
-		if(demandZero=true) {
-			return;
-		}
+		if(demandZero) return; //We do nothing if the demand is zero. TODO: Why?
 		
+		//Calculate the log-sum
 		Map<Id<AnalyticalModelRoute>,Double> logSumRouteUtility=new HashMap<>();
-		for(String s:this.timeBean.keySet()) {
-			for(Id<AnalyticalModelRoute> routeId:this.RouteUtility.get(s).keySet()) {
-				if(this.RouteUtility.get(s).get(routeId)!=0) {
+		for(HashMap<Id<AnalyticalModelRoute>,Double> utilityMap : this.RouteUtility.values()) {
+			for(Id<AnalyticalModelRoute> routeId : utilityMap.keySet()) {
+				if(utilityMap.get(routeId)!=0) {
 					if(logSumRouteUtility.containsKey(routeId)) {
-						
-						logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.log(this.RouteUtility.get(s).get(routeId)));
+						logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.log(utilityMap.get(routeId)));
 					}else {
-						logSumRouteUtility.put(routeId,Math.log(this.RouteUtility.get(s).get(routeId)));
+						logSumRouteUtility.put(routeId,Math.log(utilityMap.get(routeId)));
 					}
 				}
 			}
 			
 		}
-		ArrayList<Double> orderedRouteUtility;
-		orderedRouteUtility=new ArrayList<Double>(logSumRouteUtility.values());
+		List<Double> orderedRouteUtility = new ArrayList<Double>(logSumRouteUtility.values());
+		if(orderedRouteUtility.isEmpty()) {
+			return; //I don't know why, but all utilities are 0.
+		}
 		Collections.sort(orderedRouteUtility);
-		Collections.reverse(orderedRouteUtility);
-		double criticalUtility=orderedRouteUtility.get(remaingingRouteNo);
-		for(Id<AnalyticalModelRoute>routeId:logSumRouteUtility.keySet()) {
-			if(logSumRouteUtility.get(routeId)<criticalUtility) {
-				this.routeset.remove(routeId);
+		Collections.reverse(orderedRouteUtility); //Sort the log sum route utility
+		double criticalUtility = orderedRouteUtility.get(remaingingRouteNo);
+		for(Id<AnalyticalModelRoute> routeId : logSumRouteUtility.keySet()) {
+			if(logSumRouteUtility.get(routeId) < criticalUtility) {
+				this.routeset.remove(routeId); //Remove both route set and description
 				this.RoutesWithDescription.remove(routeId);
 			}
 		}
 		
 	}
 
-	public double getExpectedMaximumCarUtility(LinkedHashMap<String,Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
+	public double getExpectedMaximumCarUtility(LinkedHashMap<String,Double> params, LinkedHashMap<String,Double> anaParams, String timeBeanId) {
 		if(this.RouteUtility.get(timeBeanId).size()==0) {
 			return Double.NEGATIVE_INFINITY;
 		}
@@ -565,9 +562,7 @@ public class AnalyticalModelODpair {
 		for(double utility:this.RouteUtility.get(timeBeanId).values()) {
 			logsum+=Math.exp(utility);
 		}
-		
-		this.ExpectedMaximumCarUtility=1*Math.log(logsum);
-		return ExpectedMaximumCarUtility/anaParams.get("LinkMiu");
+		return 1 * Math.log(logsum) / anaParams.get("LinkMiu");
 	}
 
 	public double getExpectedMaximumTransitUtility(LinkedHashMap<String,Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
