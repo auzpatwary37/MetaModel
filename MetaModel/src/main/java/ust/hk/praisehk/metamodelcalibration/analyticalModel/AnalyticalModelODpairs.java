@@ -124,7 +124,7 @@ public abstract class AnalyticalModelODpairs {
 		for(Id<AnalyticalModelODpair> odId:this.ODpairset.keySet()) {
 			this.ODpairset.get(odId).deleteCarRoute(RemainingRouteNo);
 		}
-		this.generateRouteandLinkIncidence(0);
+		//this.generateRouteandLinkIncidence(0);
 	}
 	
 	public void generateODpairsetWithoutRoutes(){

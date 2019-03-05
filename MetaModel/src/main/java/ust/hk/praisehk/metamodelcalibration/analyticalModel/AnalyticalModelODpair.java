@@ -517,13 +517,28 @@ public class AnalyticalModelODpair {
 		if(this.routeset.size()<=remaingingRouteNo) {
 			return;
 		}
+		boolean demandZero=true;
+		
+		for(String s:this.demand.keySet()) {
+			if (this.demand.get(s)!=0) {
+				demandZero=false;
+				break;
+			}
+		}
+		if(demandZero=true) {
+			return;
+		}
+		
 		Map<Id<AnalyticalModelRoute>,Double> logSumRouteUtility=new HashMap<>();
 		for(String s:this.timeBean.keySet()) {
 			for(Id<AnalyticalModelRoute> routeId:this.RouteUtility.get(s).keySet()) {
-				if(logSumRouteUtility.containsKey(routeId)) {
-					logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.log(this.RouteUtility.get(s).get(routeId)));
-				}else {
-					logSumRouteUtility.put(routeId,Math.log(this.RouteUtility.get(s).get(routeId)));
+				if(this.RouteUtility.get(s).get(routeId)!=0) {
+					if(logSumRouteUtility.containsKey(routeId)) {
+						
+						logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.log(this.RouteUtility.get(s).get(routeId)));
+					}else {
+						logSumRouteUtility.put(routeId,Math.log(this.RouteUtility.get(s).get(routeId)));
+					}
 				}
 			}
 			

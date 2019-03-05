@@ -92,7 +92,11 @@ public class CNLRoute implements AnalyticalModelRoute{
 				this.getTravelTime(network,timeBean,parmas,anaParmas)*MUTravelTime+
 				(MUDistanceCar+MUMoney*DistanceBasedMoneyCostCar)*this.getRouteDistance();
 				
- 		return this.RouteUtility*anaParmas.get(CNLSUEModel.LinkMiuName);
+ 		if(this.RouteUtility==0) {
+ 			System.out.println("Debug!!!!");
+ 		}
+		return this.RouteUtility*anaParmas.get(CNLSUEModel.LinkMiuName);
+ 		
 	}
 	@Override
 	public double getOtherMoneyCost() {
