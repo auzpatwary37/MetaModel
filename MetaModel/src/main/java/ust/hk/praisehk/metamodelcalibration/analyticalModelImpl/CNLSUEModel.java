@@ -948,9 +948,9 @@ public class CNLSUEModel implements AnalyticalModel{
 		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()){
 			double demand=this.demand.get(timeBeanId).get(odPair.getODpairId());
 			if(demand!=0) {
-				double carUtility=odPair.getExpectedMaximumCarUtility(params, anaParams, timeBeanId);
+				//double carUtility=odPair.getExpectedMaximumCarUtility(params, anaParams, timeBeanId);
 				if(!odPair.getODpairId().toString().contains("GV")) {
-					Double cardemand=demand*defaultptModeshare;
+					Double cardemand=demand*(1-defaultptModeshare);
 					this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),cardemand);
 				}else {
 					Double cardemand=demand;

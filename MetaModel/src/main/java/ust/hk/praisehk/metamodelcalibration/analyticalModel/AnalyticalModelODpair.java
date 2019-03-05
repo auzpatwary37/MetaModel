@@ -523,20 +523,25 @@ public class AnalyticalModelODpair {
 			}
 		}
 		if(demandZero) return; //We do nothing if the demand is zero. TODO: Why?
-		
+		//System.out.println();
 		//Calculate the log-sum
 		Map<Id<AnalyticalModelRoute>,Double> logSumRouteUtility=new HashMap<>();
 		for(HashMap<Id<AnalyticalModelRoute>,Double> utilityMap : this.RouteUtility.values()) {
 			for(Id<AnalyticalModelRoute> routeId : utilityMap.keySet()) {
 				if(utilityMap.get(routeId)!=0) {
 					if(logSumRouteUtility.containsKey(routeId)) {
-						logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.log(utilityMap.get(routeId)));
+						logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.exp(utilityMap.get(routeId)));
 					}else {
-						logSumRouteUtility.put(routeId,Math.log(utilityMap.get(routeId)));
+						double utility=utilityMap.get(routeId);
+						logSumRouteUtility.put(routeId,Math.exp(utilityMap.get(routeId)));
 					}
 				}
+				
 			}
 			
+		}
+		for(Id<AnalyticalModelRoute>routeId:logSumRouteUtility.keySet()) {
+			logSumRouteUtility.put(routeId,Math.log(logSumRouteUtility.get(routeId)));
 		}
 		List<Double> orderedRouteUtility = new ArrayList<Double>(logSumRouteUtility.values());
 		if(orderedRouteUtility.isEmpty()) {
