@@ -56,7 +56,6 @@ public class CNLRoute implements AnalyticalModelRoute{
 	}
 	@Override
 	public double getRouteDistance() {
-		
 		return this.distanceTravelled;
 	}
 	

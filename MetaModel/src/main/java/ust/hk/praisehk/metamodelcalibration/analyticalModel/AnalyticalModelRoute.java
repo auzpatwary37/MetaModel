@@ -51,15 +51,19 @@ public interface AnalyticalModelRoute{
 	public abstract ArrayList<Id<Link>> getLinkIds();
 	
 	public static Route PathToRouteConverter(Path p, Link startLink, Link endLink) {
+		double distance=0;
 		Id<Link> startLinkId=startLink.getId();
+		distance+=startLink.getLength();
 		Id<Link>endLinkId=endLink.getId();
+		distance+=endLink.getLength();
 		List<Id<Link>>linkList=new ArrayList<>();
 		for(int i=0;i<p.links.size();i++) {
 			
 			linkList.add(p.links.get(i).getId());
-			
+			distance+=p.links.get(i).getLength();
 		}
 		Route r=RouteUtils.createLinkNetworkRouteImpl(startLinkId, linkList, endLinkId);
+		r.setDistance(distance);
 		if(endLinkId.equals(null)) {
 		System.out.println("Debug point");
 		}

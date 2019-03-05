@@ -69,6 +69,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	private void defaultParameterInitiation(Config config){
+		super.Params.clear();
 		if(this.subPopulationName.size()!=0) {
 			for(String subPop:this.subPopulationName) {
 				if(!subPop.contains("GV")) {
@@ -111,6 +112,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 				super.Params.put(AnalyticalModel.ModeConstantCarName,config.planCalcScore().getOrCreateModeParams("car").getConstant());
 				super.Params.put(AnalyticalModel.MarginalUtilityofPerformName,config.planCalcScore().getPerforming_utils_hr());
 			}
+		super.Params.put("All "+AnalyticalModel.CapacityMultiplierName, config.qsim().getFlowCapFactor());
 	}
 	
 	@Override
@@ -118,6 +120,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 			Scenario scenario,Map<String,FareCalculator> fareCalculator) {
 		this.setLastPopulation(population);
 		//System.out.println("");
+		super.originalNetwork=network;
 		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.getTimeBeans()));
 		Config odConfig=ConfigUtils.createConfig();
 		odConfig.network().setInputFile("data/odNetwork.xml");
@@ -166,11 +169,14 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	
 	}
 	
-	private LinkedHashMap<String,Double>generateSubPopSpecificParam(LinkedHashMap<String,Double>originalparams,String subPopName){
+	public static LinkedHashMap<String,Double>generateSubPopSpecificParam(LinkedHashMap<String,Double>originalparams,String subPopName){
 		LinkedHashMap<String,Double> specificParam=new LinkedHashMap<>();
 		for(String s:originalparams.keySet()) {
 			if(s.contains(subPopName)) {
 				specificParam.put(s.split(" ")[1],originalparams.get(s));
+			}
+			if(s.contains("All")) {
+				specificParam.put(s,originalparams.get(s));
 			}
 		}
 		return specificParam;
@@ -184,7 +190,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		//System.out.println("");
 		this.scenario=scenario;
 		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
-		
+		super.originalNetwork=network;
 		//trial
 		Config odConfig=ConfigUtils.createConfig();
 		odConfig.network().setInputFile("data/odNetTPUSB.xml");
@@ -215,7 +221,11 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 			this.getDemand().put(timeBeanId, new HashMap<>(this.getOdPairs().getdemand(timeBeanId)));
 			for(Id<AnalyticalModelODpair> odId:this.getDemand().get(timeBeanId).keySet()) {
 				double totalDemand=this.getDemand().get(timeBeanId).get(odId);
-				if(this.getOdPairs().getODpairset().get(odId).getTrRoutes().isEmpty()) {
+				AnalyticalModelODpair sk=this.getOdPairs().getODpairset().get(odId);
+				if(sk==null) {
+					System.out.println();
+				}
+				if(this.getOdPairs().getODpairset().get(odId).getTrRoutes().isEmpty()||this.getOdPairs().getODpairset().get(odId).getTrRoutes()==null) {
 					this.getCarDemand().get(timeBeanId).put(odId, totalDemand);
 				}else {
 					this.getCarDemand().get(timeBeanId).put(odId, 0.5*totalDemand);

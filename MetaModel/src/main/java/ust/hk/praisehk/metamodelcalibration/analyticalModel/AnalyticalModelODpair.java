@@ -67,8 +67,8 @@ public class AnalyticalModelODpair {
 	private String subPopulation;
 	private double PCU=1;
 	private int minRoute=5;
-	private LinkedHashMap<Id<Link>,Integer> startLinkIds=new LinkedHashMap<>();
-	private LinkedHashMap<Id<Link>,Integer> endLinkIds=new LinkedHashMap<>();
+	private LinkedHashMap<Tuple<Id<Link>,Id<Link>>,Integer> startAndEndLinkIds=new LinkedHashMap<>();
+
 	private int totalTrip=0;
 	//TODO:Shift Node Based Coordinates to FacilityBased Coordinates
 	
@@ -309,21 +309,14 @@ public class AnalyticalModelODpair {
 //		if(trip.getRoute()!=null){
 			demand.put(timeId, demand.get(timeId)+1);
 			
-			if(trip.getStartLinkId()!=null) {
-				if(this.startLinkIds.containsKey(trip.getStartLinkId())) {
-					this.startLinkIds.put(trip.getStartLinkId(),this.startLinkIds.get(trip.getStartLinkId())+1);
-				}else {
-					this.startLinkIds.put(trip.getStartLinkId(),1);
-				}
-			}
 			
-			if(trip.getEndLinkId()!=null) {
-				if(this.endLinkIds.containsKey(trip.getEndLinkId())) {
-					this.endLinkIds.put(trip.getStartLinkId(),this.endLinkIds.get(trip.getEndLinkId())+1);
+				if(this.startAndEndLinkIds.containsKey(trip.getStartAndEndLinkId())) {
+					this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),this.startAndEndLinkIds.get(trip.getStartAndEndLinkId())+1);
 				}else {
-					this.endLinkIds.put(trip.getEndLinkId(),1);
+					this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),1);
 				}
-			}
+			
+			
 			totalTrip++;
 //			this.agentCARCounter+=trip.getCarPCU();
 //			if(!routeset.containsKey(trip.getRoute().getRouteId())){//A new route 
@@ -363,20 +356,23 @@ public class AnalyticalModelODpair {
 		return routeset;
 	}
 
-	public Id<Link> getStartLinkId(){
-		int[] index=new int[this.startLinkIds.size()];
-		double[] prob=new double[this.startLinkIds.size()];
+	public Tuple<Id<Link>,Id<Link>> getStartAndEndLinkIds(){
+		int[] index=new int[this.startAndEndLinkIds.size()];
+		double[] prob=new double[this.startAndEndLinkIds.size()];
 		int i=0;
-		for(Id<Link> linkId:this.startLinkIds.keySet()) {
+		
+		for(Tuple<Id<Link>,Id<Link>> linkIds:this.startAndEndLinkIds.keySet()) {
 			index[i]=i;
-			prob[i]=this.startLinkIds.get(linkId)*1./this.totalTrip;
+			prob[i]=this.startAndEndLinkIds.get(linkIds)*1./this.totalTrip;
+			
+			
 			i++;
 		}
 		EnumeratedIntegerDistribution dist=new EnumeratedIntegerDistribution(index,prob);
 		int ind=dist.sample();
 		i=0;
-		Id<Link> returnId=null;
-		for(Id<Link> linkId:this.startLinkIds.keySet()) {
+		Tuple<Id<Link>,Id<Link>> returnId=null;
+		for(Tuple<Id<Link>,Id<Link>> linkId:this.startAndEndLinkIds.keySet()) {
 			if(i==ind) {
 				returnId= linkId;
 			}
@@ -385,27 +381,8 @@ public class AnalyticalModelODpair {
 		return returnId;
 	}
 	
-	public Id<Link> getendLinkId(){
-		int[] index=new int[this.endLinkIds.size()];
-		double[] prob=new double[this.endLinkIds.size()];
-		int i=0;
-		for(Id<Link> linkId:this.endLinkIds.keySet()) {
-			index[i]=i;
-			prob[i]=this.endLinkIds.get(linkId)*1./this.totalTrip;
-			i++;
-		}
-		EnumeratedIntegerDistribution dist=new EnumeratedIntegerDistribution(index,prob);
-		int ind=dist.sample();
-		i=0;
-		Id<Link> returnId=null;
-		for(Id<Link> linkId:this.endLinkIds.keySet()) {
-			if(i==ind) {
-				returnId= linkId;
-			}
-			i++;
-		}
-		return returnId;
-	}
+	
+	
 	
 	/**
 	 * For future expansion 
@@ -675,6 +652,9 @@ public class AnalyticalModelODpair {
 		return this.timeBasedTransitRoutes.get(timeBeanId);
 	}
 	public ArrayList<AnalyticalModelTransitRoute> getTrRoutes(){
+		if(this.finalTrRoutes==null) {
+			return new ArrayList<AnalyticalModelTransitRoute>();
+		}
 		return this.finalTrRoutes;
 	}
 	

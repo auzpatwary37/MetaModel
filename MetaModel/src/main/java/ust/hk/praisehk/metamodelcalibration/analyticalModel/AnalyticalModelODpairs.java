@@ -345,9 +345,11 @@ public abstract class AnalyticalModelODpairs {
 			Thread[] threads=new Thread[personList.size()];
 			for(int i=0;i<personList.size();i++) {
 				threadrun.add(new tripsCreatorFromPlan(personList.get(i),this));
+				threadrun.get(i).setPersonsAttributes(this.population.getPersonAttributes());
 				threads[i]=new Thread(threadrun.get(i));
 			}
 			for(int i=0;i<personList.size();i++) {
+				
 				threads[i].start();
 			}
 
@@ -380,15 +382,16 @@ public abstract class AnalyticalModelODpairs {
 				pcu=v.getType().getPcuEquivalents();
 			}
 			trip.setCarPCU(pcu);
-//			if(trip.getRoute()!=null ||trip.getTrRoute()!=null) {
-				Id<AnalyticalModelODpair> ODId=trip.generateODpairId(network);
+			if(!trip.getStartLinkId().toString().equals(trip.getEndLinkId().toString())) {
+				Id<AnalyticalModelODpair> ODId=trip.generateODpairId(odNetwork);
 				if (ODpairset.containsKey(ODId)){
 					ODpairset.get(ODId).addtripWithoutRoute(trip);
 				}else{
 					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),network,this.timeBean,trip.getSubPopulationName());
 					odpair.addtripWithoutRoute(trip);
-					ODpairset.put(trip.generateODpairId(network), odpair);
+					ODpairset.put(trip.generateODpairId(odNetwork), odpair);
 				}
+			}
 //			}else {
 //				if(!trip.getMode().equals("transit_walk")) {
 //					//throw new IllegalArgumentException("WAit");
@@ -396,6 +399,17 @@ public abstract class AnalyticalModelODpairs {
 //				tripsWithoutRoute++;
 //			}
 		}
+////		Map<Id<AnalyticalModelODpair>,AnalyticalModelODpair> sudoso=new HashMap<>(this.ODpairset);
+////		int sameLinkOD=0;
+////		for(AnalyticalModelODpair odPair:sudoso.values()) {
+////			if(odPair.getStartLinkIds().size()==1 && odPair.getEndLinkIds().size()==1 && odPair.getStartLinkIds().keySet().toArray()[0].toString().equals(odPair.getEndLinkIds().keySet().toArray()[0].toString())) {
+////				this.ODpairset.remove(odPair.getODpairId());
+////				sameLinkOD++;
+////				System.out.println();
+////			}
+////			
+////		}
+//		System.out.println("No of same link ODs = "+sameLinkOD);
 		//System.out.println("no of trips withoutRoutes = "+tripsWithoutRoute);
 	}
 	

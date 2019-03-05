@@ -28,6 +28,7 @@ import dynamicTransitRouter.fareCalculators.MTRFareCalculator;
 import dynamicTransitRouter.fareCalculators.UniformFareCalculator;
 import dynamicTransitRouter.fareCalculators.ZonalFareXMLParserV2;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModelSubPop;
+import ust.hk.praisehk.metamodelcalibration.calibrator.ParamReader;
 
 public class testRunHKIEnoch67 {
 public static void main(String[] args) throws IOException, SAXException, ParserConfigurationException {
@@ -174,14 +175,17 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 	fareCalculator.put("tram", new UniformFareCalculator(2.3));
 	fareCalculator.put("ship", new UniformFareCalculator(3));
 	fareCalculator.put("train",new MTRFareCalculator("fare/mtr_lines_fares.csv", scenario.getTransitSchedule()));
-	fareCalculator.put("train",new LRFareCalculator("fare/light_rail_fares.csv"));
+	fareCalculator.put("LR",new LRFareCalculator("fare/light_rail_fares.csv"));
 	
 	Map<String,Tuple<Double,Double>> timeBean=new HashMap<>();
 	for(int i=3;i<=29;i++) {
 		timeBean.put(Integer.toString(i), new Tuple<Double,Double>((i-1)*3600.,i*3600.));
+		
 	}
 	
-	CNLSUEModelSubPop anaModel=new CNLSUEModelSubPop(config,timeBean,subPopNames);
+	
+	//Object a=scenario.getPopulation().getPersonAttributes();
+	CNLSUEModelSubPop anaModel=new CNLSUEModelSubPop(config,ParamReader.getDefaultTimeBean(),subPopNames);
 	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getTransitSchedule(), scenario, fareCalculator);
 	anaModel.generateMATSimRoutes(0.7);
 	System.out.println("wait!!!!");

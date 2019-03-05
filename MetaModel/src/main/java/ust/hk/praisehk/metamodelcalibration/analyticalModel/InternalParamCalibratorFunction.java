@@ -67,9 +67,12 @@ public class InternalParamCalibratorFunction implements Calcfc{
 					j++;
 				}
 				LinkedHashMap<String,Double> anaParam=scaleUp(y);
+				
+				
 				double objective=0;
 				for(int i=0;i<this.simMeasurements.size();i++) {
 					LinkedHashMap<String,Double> param=new LinkedHashMap<>(this.Parmas.get(i));
+					//sue.clearLinkCarandTransitVolume();
 					Map<String,Map<Id<Link>,Double>> anaCount=this.sue.perFormSUE(param, anaParam);
 					Measurements anaMeasurement=this.simMeasurements.get(0).clone();
 					anaMeasurement.updateMeasurements(anaCount);

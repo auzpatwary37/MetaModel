@@ -79,4 +79,6 @@ public interface AnalyticalModel {
 	public Map<Integer, Measurements> calibrateInternalParams(Map<Integer, Measurements> simMeasurements,
 			Map<Integer, LinkedHashMap<String, Double>> params, LinkedHashMap<String, Double> initialParam,
 			int currentParamNo);
+
+	public double getAverageLinkTravelTime(Id<Link> id);
 }

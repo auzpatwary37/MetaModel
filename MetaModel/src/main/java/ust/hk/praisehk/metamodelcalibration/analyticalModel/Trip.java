@@ -8,6 +8,7 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.network.NetworkUtils;
+import org.matsim.core.utils.collections.Tuple;
 
 
 
@@ -15,6 +16,7 @@ import org.matsim.core.network.NetworkUtils;
 
 
 public class Trip {
+	public static int weirdTrip=0;
 	public void setPersonId(Id<Person> personId) {
 		this.PersonId = personId.toString();
 	}
@@ -42,8 +44,8 @@ public class Trip {
 	private String subPopulationName=null;
 	private static final Logger logger=Logger.getLogger(Trip.class);
 	private double CarPCU=1;
-	private Id<Link> startLinkId;
-	private Id<Link> endLinkId;
+	private Id<Link> startLinkId=null;
+	private Id<Link> endLinkId=null;
 	/**
 	 * 
 	 * @param line - containing all the data probably from a file (.csv)
@@ -105,7 +107,15 @@ public class Trip {
 	}
 
 	public void setStartLinkId(Id<Link> startLinkId) {
+		if(this.endLinkId!=null && this.endLinkId.equals(startLinkId)) {
+			//throw new IllegalArgumentException("Same start and end linkId!!!! Please check.");
+			Trip.weirdTrip++;
+		}
 		this.startLinkId = startLinkId;
+	}
+	
+	public Tuple<Id<Link>,Id<Link>> getStartAndEndLinkId(){
+		return new Tuple<Id<Link>,Id<Link>>(this.startLinkId,this.endLinkId);
 	}
 
 	public Id<Link> getEndLinkId() {
@@ -113,6 +123,12 @@ public class Trip {
 	}
 
 	public void setEndLinkId(Id<Link> endLinkId) {
+		if(this.startLinkId!=null && this.startLinkId.toString().equals(endLinkId.toString())) {
+			//throw new IllegalArgumentException("Same start and end linkId!!!! Please check.");
+			
+			Trip.weirdTrip++;
+		}
+		
 		this.endLinkId = endLinkId;
 	}
 
