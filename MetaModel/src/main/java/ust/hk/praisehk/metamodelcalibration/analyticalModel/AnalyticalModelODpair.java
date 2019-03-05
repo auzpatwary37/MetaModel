@@ -235,7 +235,7 @@ public class AnalyticalModelODpair {
 		}
 		
 		if(trip.getRoute()!=null){
-			demand.put(timeId, demand.get(timeId)+1);
+			demand.put(timeId, demand.get(timeId)+trip.getCarPCU());
 			this.agentCARCounter+=trip.getCarPCU();
 			if(!routeset.containsKey(trip.getRoute().getRouteId())){//A new route 
 				routeset.put(trip.getRoute().getRouteId(),1);
@@ -307,7 +307,7 @@ public class AnalyticalModelODpair {
 		}
 		
 //		if(trip.getRoute()!=null){
-			demand.put(timeId, demand.get(timeId)+1);
+			demand.put(timeId, demand.get(timeId)+trip.getCarPCU());
 			
 			
 				if(this.startAndEndLinkIds.containsKey(trip.getStartAndEndLinkId())) {

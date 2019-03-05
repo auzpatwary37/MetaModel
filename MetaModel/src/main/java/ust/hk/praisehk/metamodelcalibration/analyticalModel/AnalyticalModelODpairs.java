@@ -39,6 +39,9 @@ public abstract class AnalyticalModelODpairs {
 	private final Map<String,Tuple<Double,Double>> timeBean;
 	
 	
+	public Scenario getScenario() {
+		return scenario;
+	}
 	public AnalyticalModelODpairs(String populationFileLocation, String networkFileLocation,HashMap<String,Tuple<Double,Double>> timeBean){
 		
 		config.network().setInputFile(networkFileLocation);
@@ -446,8 +449,10 @@ class tripsCreatorFromPlan implements Runnable {
 			for(Person p:this.Persons) {
 				TripChain tripchain=this.odPairs.getNewTripChain(p.getSelectedPlan());
 				String s=(String) this.personsAttributes.getAttribute(p.getId().toString(), "SUBPOP_ATTRIB_NAME");
+				double pcu=this.odPairs.getScenario().getVehicles().getVehicles().get(Id.createVehicleId(p.getId().toString())).getType().getPcuEquivalents();
 				for(Trip t:(ArrayList<Trip>)tripchain.getTrips()) {
 					t.setSubPopulationName(s);
+					t.setCarPCU(pcu);
 				}
 				trips.addAll( tripchain.getTrips());
 			}
