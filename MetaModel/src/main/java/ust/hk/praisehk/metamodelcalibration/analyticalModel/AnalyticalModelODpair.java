@@ -44,7 +44,7 @@ public class AnalyticalModelODpair {
 	private final Coord dcoord;
 	private double expansionFactor;
 	private Map<String,Double> demand=new HashMap<>();
-	private Map <Id<VehicleType>,VehicleType> vt;
+	//private Map <Id<VehicleType>,VehicleType> vt;
 	private Coord[] c;
 	private final Id<AnalyticalModelODpair> ODpairId;
 	private LinkedHashMap<Id<AnalyticalModelRoute>, Integer> routeset=new LinkedHashMap<>();
@@ -65,11 +65,12 @@ public class AnalyticalModelODpair {
 	private final Map<String, Tuple<Double,Double>>timeBean;
 	private Map<String, ArrayList<AnalyticalModelTransitRoute>> timeBasedTransitRoutes=new HashMap<>();
 	private String subPopulation;
-	private double PCU=1;
+	//private double PCU=1;
 	private int minRoute=5;
 	private LinkedHashMap<Tuple<Id<Link>,Id<Link>>,Integer> startAndEndLinkIds=new LinkedHashMap<>();
 
-	private int totalTrip=0;
+	private int totalTrip = 0;
+	private List<Id<Person>> personIdsConcerned = new ArrayList<>();
 	//TODO:Shift Node Based Coordinates to FacilityBased Coordinates
 	
 	/**
@@ -286,66 +287,37 @@ public class AnalyticalModelODpair {
 		
 	}
 	
-	public void addtripWithoutRoute(Trip trip){
-		String timeId=null;
-		Integer i=0;
+	public String getTimeBean(double tripStartTime) {
 		double lastTime=0;
 		String lastTimeBean=null;
-		for(String t:this.timeBean.keySet()) {
+		for(String t : this.timeBean.keySet()) {
+			//This part is for finding the last timeBin
 			if(timeBean.get(t).getSecond()>lastTime) {
 				lastTime=timeBean.get(t).getSecond();
 				lastTimeBean=t;
 			}
-			if(trip.getStartTime()>=this.timeBean.get(t).getFirst() && trip.getStartTime()<this.timeBean.get(t).getSecond()) {
-				timeId=t;
+			if(tripStartTime>=this.timeBean.get(t).getFirst() && tripStartTime<this.timeBean.get(t).getSecond()) {
+				return t; //This is for finding the middle timeBins
 			}	
 		}
+		return lastTimeBean;
+	}
 	
-		if(timeId==null) {
-			
-			timeId=lastTimeBean;
+	/**
+	 * This is a convenient function to add trip without having a route.
+	 * Only visible in package
+	 * @param trip
+	 */
+	void addtripWithoutRoute(Trip trip){
+		personIdsConcerned.add( trip.getPersonId() ); //Store the person ID.
+		String timeId = getTimeBean(trip.getStartTime());
+		demand.put(timeId, demand.get(timeId)+trip.getCarPCU());
+		if(this.startAndEndLinkIds.containsKey(trip.getStartAndEndLinkId())) {
+			this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),this.startAndEndLinkIds.get(trip.getStartAndEndLinkId())+1);
+		}else {
+			this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),1);
 		}
-		
-//		if(trip.getRoute()!=null){
-			demand.put(timeId, demand.get(timeId)+trip.getCarPCU());
-			
-			
-				if(this.startAndEndLinkIds.containsKey(trip.getStartAndEndLinkId())) {
-					this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),this.startAndEndLinkIds.get(trip.getStartAndEndLinkId())+1);
-				}else {
-					this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),1);
-				}
-			
-			
-			totalTrip++;
-//			this.agentCARCounter+=trip.getCarPCU();
-//			if(!routeset.containsKey(trip.getRoute().getRouteId())){//A new route 
-//				routeset.put(trip.getRoute().getRouteId(),1);
-//				this.RoutesWithDescription.put(trip.getRoute().getRouteId(),trip.getRoute());
-//				//this.RoutesWithDescription.get(trip.getRoute().getRouteDescription()).addPerson(trip.getPersonId());
-//				//this.no_of_occurance.put(trip.getRouteId(), 1);
-//
-//			}else{ //not a new route
-//				this.routeset.put(trip.getRoute().getRouteId(), routeset.get(trip.getRoute().getRouteId())+1);
-//				//this.RoutesWithDescription.get(trip.getRoute().getRouteDescription()).addPerson(trip.getPersonId());
-//			}
-//		}else if(trip.getTrRoute()!=null) {
-////			if(demand.get(timeId)==null) {
-////				System.out.println();
-////			}
-//			demand.put(timeId, demand.get(timeId)+1);
-//			this.agentTrCounter++;
-//			if(!this.Transitroutes.containsKey(trip.getTrRoute().getTrRouteId())) {
-//				this.Transitroutes.put(trip.getTrRoute().getTrRouteId(),trip.getTrRoute());
-//				this.transitRouteCounter.put(trip.getTrRoute().getTrRouteId(), 1);
-//			}else {
-//				this.transitRouteCounter.put(trip.getTrRoute().getTrRouteId(),this.transitRouteCounter.get(trip.getTrRoute().getTrRouteId())+ 1);
-//			}
-//		}else {
-//			this.personIdList.add(trip.getPersonId());
-//		}
-		
-		
+		totalTrip++; //Number of trip is increased by 1.
 	}
 	
 	/**
@@ -364,8 +336,6 @@ public class AnalyticalModelODpair {
 		for(Tuple<Id<Link>,Id<Link>> linkIds:this.startAndEndLinkIds.keySet()) {
 			index[i]=i;
 			prob[i]=this.startAndEndLinkIds.get(linkIds)*1./this.totalTrip;
-			
-			
 			i++;
 		}
 		EnumeratedIntegerDistribution dist=new EnumeratedIntegerDistribution(index,prob);
@@ -522,7 +492,7 @@ public class AnalyticalModelODpair {
 				break;
 			}
 		}
-		if(demandZero) return; //We do nothing if the demand is zero. TODO: Why?
+		if(demandZero) return; //We do nothing when the utility is zero, as it is no demand, not necessary to do anything
 		//System.out.println();
 		//Calculate the log-sum
 		Map<Id<AnalyticalModelRoute>,Double> logSumRouteUtility=new HashMap<>();
@@ -538,7 +508,6 @@ public class AnalyticalModelODpair {
 				}
 				
 			}
-			
 		}
 		for(Id<AnalyticalModelRoute>routeId:logSumRouteUtility.keySet()) {
 			logSumRouteUtility.put(routeId,Math.log(logSumRouteUtility.get(routeId)));
@@ -643,6 +612,10 @@ public class AnalyticalModelODpair {
 
 	public void setRoutePercentage(double routePercentage) {
 		this.routePercentage = routePercentage;
+	}
+	
+	public List<Id<Person>> getPersonIds(){
+		return personIdsConcerned;
 	}
 
 	

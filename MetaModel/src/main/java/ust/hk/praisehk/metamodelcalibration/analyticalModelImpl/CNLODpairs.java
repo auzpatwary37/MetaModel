@@ -24,10 +24,17 @@ public class CNLODpairs extends AnalyticalModelODpairs{
 	private final Scenario scenario;
 	private final TransitSchedule ts;
 	
-	public CNLODpairs(Network network, Population population,TransitSchedule ts, Scenario scenario,Map<String, Tuple<Double, Double>> timeBeans) {
-		super(network, population,timeBeans,scenario);
+	public CNLODpairs(Scenario scenario, Map<String, Tuple<Double, Double>> timeBeans) {
+		super(scenario.getNetwork(), timeBeans, scenario);
+		this.scenario = scenario;
+		this.ts = scenario.getTransitSchedule();
+	}
+	
+	@Deprecated
+	public CNLODpairs(Network network, TransitSchedule ts, Scenario scenario,Map<String, Tuple<Double, Double>> timeBeans) {
+		super(network, timeBeans,scenario); //This is nothing, just put the variables
 		this.scenario=scenario;
-		this.ts=ts;
+		this.ts = ts;
 	}
 	
 	public CNLODpairs(String networkFileLoc,String populationFileLoc,TransitSchedule ts, Scenario scenario,HashMap<String,Tuple<Double,Double>> timeBean) {

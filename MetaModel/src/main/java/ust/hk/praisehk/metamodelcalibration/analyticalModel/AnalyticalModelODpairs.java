@@ -16,6 +16,9 @@ import org.matsim.api.core.v01.population.Plan;
 import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.network.NetworkUtils;
+import org.matsim.core.network.io.MatsimNetworkReader;
+import org.matsim.core.population.io.PopulationReader;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.facilities.ActivityFacility;
@@ -29,37 +32,58 @@ import com.google.common.collect.Lists;
 
 public abstract class AnalyticalModelODpairs {
 	
-	private Config config=ConfigUtils.createConfig();
-	private Scenario scenario;
+	//private Config config=ConfigUtils.createConfig();
+	//private Scenario scenario;
+	private Vehicles vehicles;
 	protected final Network network;
-	private Population population;
+	@Deprecated private Population population;
 	private Map<Id<AnalyticalModelODpair>,AnalyticalModelODpair> ODpairset=new HashMap<>();
 	private Map<Id<AnalyticalModelODpair>,Double> ODdemand=new HashMap<>();
 	//private Map<Id<AnalyticalModelODpair>,Double> ODdemandperhour=new HashMap<>();
-	private final Map<String,Tuple<Double,Double>> timeBean;
+	private final Map<String,Tuple<Double,Double>> timeBins; //There contains all time bins.
 	
-	
-	public Scenario getScenario() {
-		return scenario;
+	public Vehicles getVehicles() {
+		return vehicles;
 	}
+	
+	/**
+	 * Create analytical model OD pairs from scratch (Maybe it is not useful?)
+	 * Notes: The scenario does not have vehicle included
+	 * @param populationFileLocation
+	 * @param networkFileLocation
+	 * @param timeBean
+	 */
+	@Deprecated
 	public AnalyticalModelODpairs(String populationFileLocation, String networkFileLocation,HashMap<String,Tuple<Double,Double>> timeBean){
+		this.network = NetworkUtils.createNetwork();
+		new MatsimNetworkReader(this.network).readFile(networkFileLocation);
 		
-		config.network().setInputFile(networkFileLocation);
-		config.plans().setInputFile(populationFileLocation);
-		scenario=ScenarioUtils.loadScenario(config);
-		network=scenario.getNetwork();
-		population=scenario.getPopulation();
-		this.timeBean=timeBean;
+		//population = scenario.getPopulation();
+		Scenario scenario = ScenarioUtils.createScenario(ConfigUtils.createConfig());
+		new PopulationReader(scenario).readFile(populationFileLocation);
+		this.population = scenario.getPopulation();
+		//network=scenario.getNetwork();
+		//population=scenario.getPopulation();
+		this.timeBins=timeBean;
 	}
-	//Constructor to create from network and population file
-	public AnalyticalModelODpairs(Network network, Population population,Map<String,Tuple<Double,Double>> timeBean,Scenario scenario){
+	
+	/**
+	 * Constructor to create from network and population file
+	 * @param network
+	 * @param population
+	 * @param timeBean
+	 * @param scenario
+	 */
+	public AnalyticalModelODpairs(Network network, Map<String,Tuple<Double,Double>> timeBean, Scenario scenario){
 		this.network=network;
-		this.population=population;
-		this.timeBean=timeBean;
-		this.scenario=scenario;
+		//this.population=population;
+		this.timeBins=timeBean;
+		this.vehicles=scenario.getVehicles();
 	}
+	
+	
 	@SuppressWarnings("unchecked")
-	public void generateODpairset(){
+	public void generateODpairset(Population population){
 		ArrayList<Trip> trips=new ArrayList<>();
 		
 		/**
@@ -68,11 +92,11 @@ public abstract class AnalyticalModelODpairs {
 		boolean multiThread=true;
 		
 		if(multiThread==true) {
-			ArrayList<tripsCreatorFromPlan> threadrun=new ArrayList<>();
-			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(this.population.getPersons().values()), (int)(this.population.getPersons().values().size()/16));
+			ArrayList<TripsCreatorFromPlan> threadrun=new ArrayList<>();
+			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(population.getPersons().values()), (int)(population.getPersons().values().size()/16));
 			Thread[] threads=new Thread[personList.size()];
 			for(int i=0;i<personList.size();i++) {
-				threadrun.add(new tripsCreatorFromPlan(personList.get(i),this));
+				threadrun.add(new TripsCreatorFromPlan(personList.get(i),this));
 				threads[i]=new Thread(threadrun.get(i));
 			}
 			for(int i=0;i<personList.size();i++) {
@@ -87,11 +111,11 @@ public abstract class AnalyticalModelODpairs {
 					e.printStackTrace();
 				}
 			}
-			for(tripsCreatorFromPlan t:threadrun) {
+			for(TripsCreatorFromPlan t:threadrun) {
 				trips.addAll((ArrayList<Trip>)t.getTrips());
 			}
 		}else {
-			for (Id<Person> personId:population.getPersons().keySet()){
+			for (Id<Person> personId : population.getPersons().keySet()){
 				TripChain tripchain=this.getNewTripChain(population.getPersons().get(personId).getSelectedPlan());
 				trips.addAll( tripchain.getTrips());
 			}
@@ -99,7 +123,7 @@ public abstract class AnalyticalModelODpairs {
 		double tripsWithoutRoute=0;
 		for (Trip trip:trips){
 			double pcu=1;
-			Vehicle v=this.scenario.getVehicles().getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
+			Vehicle v=this.vehicles.getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
 			if(v!=null) {
 				pcu=v.getType().getPcuEquivalents();
 			}
@@ -109,7 +133,7 @@ public abstract class AnalyticalModelODpairs {
 				if (ODpairset.containsKey(ODId)){
 					ODpairset.get(ODId).addtrip(trip);
 				}else{
-					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),network,this.timeBean);
+					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),network,this.timeBins);
 					odpair.addtrip(trip);
 					ODpairset.put(trip.generateODpairId(network), odpair);
 				}
@@ -130,7 +154,10 @@ public abstract class AnalyticalModelODpairs {
 		//this.generateRouteandLinkIncidence(0);
 	}
 	
-	public void generateODpairsetWithoutRoutes(){
+	/**
+	 * This function generate routes for a initial given population
+	 */
+	public void generateODpairsetWithoutRoutes(Population population){
 		ArrayList<Trip> trips=new ArrayList<>();
 		
 		/**
@@ -139,11 +166,11 @@ public abstract class AnalyticalModelODpairs {
 		boolean multiThread=true;
 		
 		if(multiThread==true) {
-			ArrayList<tripsCreatorFromPlan> threadrun=new ArrayList<>();
-			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(this.population.getPersons().values()), (int)(this.population.getPersons().values().size()/16));
+			ArrayList<TripsCreatorFromPlan> threadrun=new ArrayList<>();
+			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(population.getPersons().values()), (int)(population.getPersons().values().size()/16));
 			Thread[] threads=new Thread[personList.size()];
 			for(int i=0;i<personList.size();i++) {
-				threadrun.add(new tripsCreatorFromPlan(personList.get(i),this));
+				threadrun.add(new TripsCreatorFromPlan(personList.get(i),this));
 				threads[i]=new Thread(threadrun.get(i));
 			}
 			for(int i=0;i<personList.size();i++) {
@@ -158,7 +185,7 @@ public abstract class AnalyticalModelODpairs {
 					e.printStackTrace();
 				}
 			}
-			for(tripsCreatorFromPlan t:threadrun) {
+			for(TripsCreatorFromPlan t:threadrun) {
 				trips.addAll((ArrayList<Trip>)t.getTrips());
 			}
 		}else {
@@ -170,7 +197,7 @@ public abstract class AnalyticalModelODpairs {
 		double tripsWithoutRoute=0;
 		for (Trip trip:trips){
 			double pcu=1;
-			Vehicle v=this.scenario.getVehicles().getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
+			Vehicle v=this.vehicles.getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
 			if(v!=null) {
 				pcu=v.getType().getPcuEquivalents();
 			}
@@ -180,7 +207,7 @@ public abstract class AnalyticalModelODpairs {
 				if (ODpairset.containsKey(ODId)){
 					ODpairset.get(ODId).addtripWithoutRoute(trip);
 				}else{
-					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),network,this.timeBean);
+					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),network,this.timeBins);
 					odpair.addtripWithoutRoute(trip);
 					ODpairset.put(trip.generateODpairId(network), odpair);
 				}
@@ -210,7 +237,7 @@ public abstract class AnalyticalModelODpairs {
 		
 		return Dfacilities;
 	}
-	public Map<Id<AnalyticalModelODpair>,Double> getdemand(String timeBeanId){
+	public Map<Id<AnalyticalModelODpair>,Double> getDemand(String timeBeanId){
 		for(Id<AnalyticalModelODpair> ODpairId:ODpairset.keySet()){
 			this.ODdemand.put(ODpairId, ODpairset.get(ODpairId).getSpecificPeriodODDemand(timeBeanId));
 		}
@@ -222,9 +249,9 @@ public abstract class AnalyticalModelODpairs {
 		return network;
 	}
 
-	public Population getPopulation() {
-		return population;
-	}
+//	public Population getPopulation() {
+//		return population;
+//	}
 	
 	public Map<Id<Link>,ArrayList<AnalyticalModelRoute>> getLinkIncidence(String ODpairId){
 		this.ODpairset.get(ODpairId).generateLinkIncidence();
@@ -257,13 +284,13 @@ public abstract class AnalyticalModelODpairs {
 		return new AnalyticalModelODpair(oNode,dNode,network,timeBean2,subPopName);
 	}
 	public Map<String, Tuple<Double,Double>> getTimeBean() {
-		return timeBean;
+		return timeBins;
 	}
 	
 	public abstract Map<Id<TransitLink>, TransitLink> getTransitLinks(Map<String,Tuple<Double,Double>> timeBean,String timeBeanId);
 
 
-	public void generateODpairsetSubPop(Network odNetwork){
+	public void generateODpairsetSubPop(Network odNetwork, Population population){
 		if(odNetwork==null) {
 			odNetwork=this.network;
 		}
@@ -274,12 +301,12 @@ public abstract class AnalyticalModelODpairs {
 		 */
 		boolean multiThread=true;
 		if(multiThread==true) {
-			ArrayList<tripsCreatorFromPlan> threadrun=new ArrayList<>();
-			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(this.population.getPersons().values()), (int)(this.population.getPersons().values().size()/16));
+			ArrayList<TripsCreatorFromPlan> threadrun=new ArrayList<>();
+			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(population.getPersons().values()), (int)(population.getPersons().values().size()/16));
 			Thread[] threads=new Thread[personList.size()];
 			for(int i=0;i<personList.size();i++) {
-				threadrun.add(new tripsCreatorFromPlan(personList.get(i),this));
-				threadrun.get(i).setPersonsAttributes(this.population.getPersonAttributes());
+				threadrun.add(new TripsCreatorFromPlan(personList.get(i),this));
+				threadrun.get(i).setPersonsAttributes(population.getPersonAttributes());
 				threads[i]=new Thread(threadrun.get(i));
 			}
 			for(int i=0;i<personList.size();i++) {
@@ -294,13 +321,13 @@ public abstract class AnalyticalModelODpairs {
 					e.printStackTrace();
 				}
 			}
-			for(tripsCreatorFromPlan t:threadrun) {
+			for(TripsCreatorFromPlan t:threadrun) {
 				trips.addAll((ArrayList<Trip>)t.getTrips());
 			}
 		}else {
 			for (Id<Person> personId:population.getPersons().keySet()){
 				TripChain tripchain=this.getNewTripChain(population.getPersons().get(personId).getSelectedPlan());
-				String s=(String) this.population.getPersonAttributes().getAttribute(personId.toString(), "SUBPOP_ATTRIB_NAME");
+				String s = (String) population.getPersonAttributes().getAttribute(personId.toString(), "SUBPOP_ATTRIB_NAME");
 				for(Trip t:(ArrayList<Trip>)tripchain.getTrips()) {
 					t.setSubPopulationName(s);
 				}
@@ -310,7 +337,7 @@ public abstract class AnalyticalModelODpairs {
 		double tripsWithoutRoute=0;
 		for (Trip trip:trips){
 			double pcu=1;
-			Vehicle v=this.scenario.getVehicles().getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
+			Vehicle v=this.vehicles.getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
 			if(v!=null) {
 				pcu=v.getType().getPcuEquivalents();
 			}
@@ -320,7 +347,7 @@ public abstract class AnalyticalModelODpairs {
 				if (ODpairset.containsKey(ODId)){
 					ODpairset.get(ODId).addtrip(trip);
 				}else{
-					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),odNetwork,this.timeBean,trip.getSubPopulationName());
+					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),odNetwork,this.timeBins,trip.getSubPopulationName());
 					odpair.addtrip(trip);
 					ODpairset.put(trip.generateODpairId(odNetwork), odpair);
 				}
@@ -331,7 +358,7 @@ public abstract class AnalyticalModelODpairs {
 		System.out.println("no of trips withoutRoutes = "+tripsWithoutRoute);
 	}
 	
-	public void generateODpairsetWithoutRoutesSubPop(Network odNetwork){
+	public void generateODpairsetWithoutRoutesSubPop(Network odNetwork, Population population){
 		ArrayList<Trip> trips=new ArrayList<>();
 		
 		if(odNetwork==null) {
@@ -342,17 +369,17 @@ public abstract class AnalyticalModelODpairs {
 		 */
 		boolean multiThread=true;
 		
-		if(multiThread==true) {
-			ArrayList<tripsCreatorFromPlan> threadrun=new ArrayList<>();
-			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(this.population.getPersons().values()), (int)(this.population.getPersons().values().size()/16));
+		if(multiThread) {
+			List<TripsCreatorFromPlan> threadrun=new ArrayList<>();
+			List<List<Person>> personList=Lists.partition(new ArrayList<Person>(population.getPersons().values()), 
+					(int)(population.getPersons().values().size()/16)); //Divide the population by 16. Why 16?
 			Thread[] threads=new Thread[personList.size()];
 			for(int i=0;i<personList.size();i++) {
-				threadrun.add(new tripsCreatorFromPlan(personList.get(i),this));
-				threadrun.get(i).setPersonsAttributes(this.population.getPersonAttributes());
+				threadrun.add(new TripsCreatorFromPlan(personList.get(i),this));
+				threadrun.get(i).setPersonsAttributes(population.getPersonAttributes());
 				threads[i]=new Thread(threadrun.get(i));
 			}
 			for(int i=0;i<personList.size();i++) {
-				
 				threads[i].start();
 			}
 
@@ -364,35 +391,36 @@ public abstract class AnalyticalModelODpairs {
 					e.printStackTrace();
 				}
 			}
-			for(tripsCreatorFromPlan t:threadrun) {
+			for(TripsCreatorFromPlan t : threadrun) {
 				trips.addAll((ArrayList<Trip>)t.getTrips());
 			}
 		}else {
 			for (Id<Person> personId:population.getPersons().keySet()){
 				TripChain tripchain=this.getNewTripChain(population.getPersons().get(personId).getSelectedPlan());
-				String s=(String) this.population.getPersonAttributes().getAttribute(personId.toString(), "SUBPOP_ATTRIB_NAME");
+				String s=(String) population.getPersonAttributes().getAttribute(personId.toString(), "SUBPOP_ATTRIB_NAME");
 				for(Trip t:(ArrayList<Trip>)tripchain.getTrips()) {
 					t.setSubPopulationName(s);
 				}
 				trips.addAll( tripchain.getTrips());
 			}
 		}
-		double tripsWithoutRoute=0;
+		//double tripsWithoutRoute=0;
 		for (Trip trip:trips){
 			double pcu=1;
-			Vehicle v=this.scenario.getVehicles().getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
+			Vehicle v=this.vehicles.getVehicles().get(Id.createVehicleId(trip.getPersonId().toString()));
 			if(v!=null) {
 				pcu=v.getType().getPcuEquivalents();
 			}
 			trip.setCarPCU(pcu);
-			if(!trip.getStartLinkId().toString().equals(trip.getEndLinkId().toString())) {
-				Id<AnalyticalModelODpair> ODId=trip.generateODpairId(odNetwork);
+			if(!trip.getStartLinkId().toString().equals(trip.getEndLinkId().toString())) { //We ignore all trips with same OD.
+				Id<AnalyticalModelODpair> ODId = trip.generateODpairId(odNetwork);
 				if (ODpairset.containsKey(ODId)){
 					ODpairset.get(ODId).addtripWithoutRoute(trip);
 				}else{
-					AnalyticalModelODpair odpair=this.getNewODPair(trip.getOriginNode(),trip.getDestinationNode(),network,this.timeBean,trip.getSubPopulationName());
+					AnalyticalModelODpair odpair=this.getNewODPair( trip.getOriginNode(), trip.getDestinationNode(), 
+							network, this.timeBins, trip.getSubPopulationName());
 					odpair.addtripWithoutRoute(trip);
-					ODpairset.put(trip.generateODpairId(odNetwork), odpair);
+					ODpairset.put(ODId, odpair);
 				}
 			}
 //			}else {
@@ -420,12 +448,12 @@ public abstract class AnalyticalModelODpairs {
 
 
 
-class tripsCreatorFromPlan implements Runnable {
+class TripsCreatorFromPlan implements Runnable {
 	private List<Person> Persons;
 	AnalyticalModelODpairs odPairs;
 	private ObjectAttributes personsAttributes=null;
 	private ArrayList<Trip> trips=new ArrayList<>();
-	public tripsCreatorFromPlan(List<Person> persons,AnalyticalModelODpairs odPairs) {
+	public TripsCreatorFromPlan(List<Person> persons,AnalyticalModelODpairs odPairs) {
 		this.Persons=persons;
 		this.odPairs=odPairs;
 	}
@@ -440,21 +468,22 @@ class tripsCreatorFromPlan implements Runnable {
 	
 	@Override
 	public void run() {
-		if(personsAttributes==null) {
+		if(personsAttributes==null) { //if there is no subpopulation
 			for(Person p:this.Persons) {
 				TripChain tripchain=this.odPairs.getNewTripChain(p.getSelectedPlan());
 				trips.addAll( tripchain.getTrips());
 			}
 		}else {
-			for(Person p:this.Persons) {
+			for(Person p:this.Persons) { //if there is subpopulation
 				TripChain tripchain=this.odPairs.getNewTripChain(p.getSelectedPlan());
 				String s=(String) this.personsAttributes.getAttribute(p.getId().toString(), "SUBPOP_ATTRIB_NAME");
-				double pcu=this.odPairs.getScenario().getVehicles().getVehicles().get(Id.createVehicleId(p.getId().toString())).getType().getPcuEquivalents();
+				double pcu=this.odPairs.getVehicles().getVehicles().get(Id.createVehicleId(p.getId().toString())).getType().getPcuEquivalents();
 				for(Trip t:(ArrayList<Trip>)tripchain.getTrips()) {
 					t.setSubPopulationName(s);
 					t.setCarPCU(pcu);
 				}
-				trips.addAll( tripchain.getTrips());
+				//TODO Get the actual mode default at that trp
+				trips.addAll(tripchain.getTrips());
 			}
 			
 		}

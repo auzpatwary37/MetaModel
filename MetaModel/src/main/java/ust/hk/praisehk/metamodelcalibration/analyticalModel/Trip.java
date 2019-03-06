@@ -83,20 +83,18 @@ public class Trip {
 	
 	/**
 	 * Generate a Origin Destination Pair ID
-	 * @param network
+	 * @param networkTPUSB The network with all centroids of TPUSB
 	 * @return
 	 */
-	public Id<AnalyticalModelODpair> generateODpairId(Network network) {
-		
+	public Id<AnalyticalModelODpair> generateODpairId(Network networkTPUSB) {
+		this.originNode=NetworkUtils.getNearestNode(networkTPUSB, activity1coord);
+		this.destinationNode=NetworkUtils.getNearestNode(networkTPUSB, activity2coord);
+		String ODPairID = this.getOriginNode().getId().toString()+"_"+this.getDestinationNode().getId().toString();
 		if(this.getSubPopulationName()!=null) {
-			this.originNode=NetworkUtils.getNearestNode(network, activity1coord);
-			this.destinationNode=NetworkUtils.getNearestNode(network, activity2coord);
-			ODpairId=Id.create(this.getOriginNode().getId().toString()+"_"+this.getDestinationNode().getId().toString()+"_"+this.getSubPopulationName(),AnalyticalModelODpair.class);
-			return ODpairId;
+			ODpairId=Id.create(ODPairID+"_"+this.getSubPopulationName() , AnalyticalModelODpair.class);
+		}else {
+			ODpairId=Id.create(ODPairID , AnalyticalModelODpair.class);
 		}
-		this.originNode=NetworkUtils.getNearestNode(network, activity1coord);
-		this.destinationNode=NetworkUtils.getNearestNode(network, activity2coord);
-		ODpairId=Id.create(this.getOriginNode().getId().toString()+"_"+this.getDestinationNode().getId().toString(),AnalyticalModelODpair.class);
 		return ODpairId;
 
 	}

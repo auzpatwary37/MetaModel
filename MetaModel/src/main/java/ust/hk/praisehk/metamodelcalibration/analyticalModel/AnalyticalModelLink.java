@@ -69,6 +69,9 @@ public abstract class AnalyticalModelLink implements Link{
 		this.linkTransitPassenger=0;
 	}
 	public void addLinkCarVolume(double lVolume) {
+		if(this.link.getId().toString().contains("WHC")) {
+			System.out.print("");
+		}
 		this.linkCarVolume+=lVolume;
 	}
 	public void addLinkTransitPassengerVolume(double lVolume) {

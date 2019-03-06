@@ -41,7 +41,8 @@ public interface AnalyticalModel {
 	
 	public void clearLinkCarandTransitVolume();
 	
-	public abstract Population getLastPopulation();
+	@Deprecated
+	public abstract Population getLastPopulation(); //I don't know why it is here.
 
 	public void setDefaultParameters(LinkedHashMap<String, Double> defaultParam);
 

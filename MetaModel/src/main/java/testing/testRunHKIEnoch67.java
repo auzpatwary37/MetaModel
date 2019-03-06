@@ -180,12 +180,12 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 		timeBean.put(Integer.toString(i), new Tuple<Double,Double>((i-1)*3600.,i*3600.));
 		
 	}
-	
-	
 	//Object a=scenario.getPopulation().getPersonAttributes();
 	CNLSUEModelSubPop anaModel=new CNLSUEModelSubPop(config,ParamReader.getDefaultTimeBean(),subPopNames);
-	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getTransitSchedule(), scenario, fareCalculator);
-	anaModel.generateMATSimRoutes(0.7);
+	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), 
+			scenario.getTransitSchedule(), scenario, fareCalculator);
+	anaModel.generateMATSimRoutes(0.7, 2, 10);
+	anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation());
 	System.out.println("wait!!!!");
 	// Add the signal module to the controller
 	//Signals.configure(controler);

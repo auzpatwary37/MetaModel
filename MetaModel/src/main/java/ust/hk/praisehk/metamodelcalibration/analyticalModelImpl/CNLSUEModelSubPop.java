@@ -60,7 +60,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		for(String timeBeanId:timeBean.keySet()) {
 			this.demand.put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
 			this.getCarDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
-			this.getTransitLinks().put(timeBeanId, new HashMap<Id<TransitLink>, TransitLink>());
+			this.transitLinks.put(timeBeanId, new HashMap<Id<TransitLink>, TransitLink>());
 			super.beta.put(timeBeanId, new ArrayList<Double>());
 			this.error.put(timeBeanId, new ArrayList<Double>());
 			this.error1.put(timeBeanId, new ArrayList<Double>());
@@ -120,33 +120,33 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	@Override
 	public void generateRoutesAndOD(Population population,Network network,TransitSchedule transitSchedule,
 			Scenario scenario,Map<String,FareCalculator> fareCalculator) {
-		this.setLastPopulation(population);
+		this.lastPopulation = population;
 		//System.out.println("");
 		super.originalNetwork=network;
-		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.getTimeBeans()));
+		this.odPairs = new CNLODpairs(network, transitSchedule, scenario, this.getTimeBeans());
 		Config odConfig=ConfigUtils.createConfig();
 		odConfig.network().setInputFile("data/odNetwork.xml");
 		Network odNetwork=ScenarioUtils.loadScenario(odConfig).getNetwork();
-		this.getOdPairs().generateODpairsetSubPop(null);//This network has priority over the constructor network. This allows to use a od pair specific network 
+		this.getOdPairs().generateODpairsetSubPop(null, population);//This network has priority over the constructor network. This allows to use a od pair specific network 
 		this.getOdPairs().generateRouteandLinkIncidence(0.);
 		for(String s:this.getTimeBeans().keySet()) {
-			this.getNetworks().put(s, new CNLNetwork(network));
-			this.performTransitVehicleOverlay(this.getNetworks().get(s),
+			this.networks.put(s, new CNLNetwork(network));
+			this.performTransitVehicleOverlay(this.networks.get(s),
 					transitSchedule,scenario.getTransitVehicles(),this.getTimeBeans().get(s).getFirst(),
 					this.getTimeBeans().get(s).getSecond());
-			this.getTransitLinks().put(s,this.getOdPairs().getTransitLinks(this.getTimeBeans(),s));
+			this.transitLinks.put(s,this.getOdPairs().getTransitLinks(this.getTimeBeans(),s));
 		}
 		this.setFareCalculator(fareCalculator);
 		
 		this.setTs(transitSchedule);
 		for(String timeBeanId:this.getTimeBeans().keySet()) {
-			this.getConsecutiveSUEErrorIncrease().put(timeBeanId, 0.);
-			this.originalDemand.put(timeBeanId, new HashMap<>(this.getOdPairs().getdemand(timeBeanId)));
+			this.consecutiveSUEErrorIncrease.put(timeBeanId, 0.);
+			this.originalDemand.put(timeBeanId, new HashMap<>(this.getOdPairs().getDemand(timeBeanId)));
 			for(Id<AnalyticalModelODpair> odId:this.originalDemand.get(timeBeanId).keySet()) {
 				double totalDemand=this.originalDemand.get(timeBeanId).get(odId);
-				this.getCarDemand().get(timeBeanId).put(odId, 0.5*totalDemand);
+				this.carDemand.get(timeBeanId).put(odId, 0.5*totalDemand);
 				if(this.getOdPairs().getODpairset().get(odId).getSubPopulation().contains("GV")) {
-					this.getCarDemand().get(timeBeanId).put(odId, totalDemand); //Load all demand to car for GV
+					this.carDemand.get(timeBeanId).put(odId, totalDemand); //Load all demand to car for GV
 				}
 				//System.out.println();
 			}
@@ -171,57 +171,54 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	@Override
 	public void generateRoutesAndODWithoutRoute(Population population,Network network,TransitSchedule transitSchedule,
 			Scenario scenario,Map<String,FareCalculator> fareCalculator) { //TODO: Check this function
-		this.setLastPopulation(population);
+		//this.lastPopulation = population;
 		//System.out.println("");
 		this.scenario=scenario;
-		this.setOdPairs(new CNLODpairs(network,population,transitSchedule,scenario,this.timeBeans));
+		this.odPairs = new CNLODpairs(scenario, this.timeBeans); //Create ODpairs
 		super.originalNetwork=network;
+		
 		//trial
 		Network net = NetworkUtils.createNetwork();
 		new MatsimNetworkReader(net).readFile("data/odNetTPUSB.xml");
-		this.getOdPairs().generateODpairsetWithoutRoutesSubPop(net); //Load the network and make the OD pairs
+		this.odPairs.generateODpairsetWithoutRoutesSubPop(net, population); //Load the network and make the OD pairs
 		
 		SignalFlowReductionGenerator sg=new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);
-		for(String s:this.timeBeans.keySet()) {
-			
-			this.getNetworks().put(s, new CNLNetwork(network));
-			this.getNetworks().get(s).updateGCRatio(sg);
-			this.performTransitVehicleOverlay(this.getNetworks().get(s),
-					transitSchedule,scenario.getTransitVehicles(),this.timeBeans.get(s).getFirst(),
-					this.timeBeans.get(s).getSecond());
-			this.getTransitLinks().put(s,this.getOdPairs().getTransitLinks(this.timeBeans,s));
+		for(String timeBin:this.timeBeans.keySet()) { ///Create network for each time bin
+			CNLNetwork analyticalNetwork = new CNLNetwork(network);
+			analyticalNetwork.updateGCRatio(sg);
+			this.networks.put(timeBin, analyticalNetwork);
+			this.performTransitVehicleOverlay(analyticalNetwork,
+					transitSchedule,scenario.getTransitVehicles(),this.timeBeans.get(timeBin).getFirst(),
+					this.timeBeans.get(timeBin).getSecond());
+			this.transitLinks.put(timeBin,this.getOdPairs().getTransitLinks(this.timeBeans,timeBin));
 		}
-		this.generateRoute();
-		this.getOdPairs().generateRouteandLinkIncidence(0);
+		this.generateRoute(); //Generate the very first route
+		this.odPairs.generateRouteandLinkIncidence(0);
 		this.fareCalculator=fareCalculator;
 		
 		this.setTs(transitSchedule);
 		for(String timeBeanId:this.timeBeans.keySet()) {
-			this.getConsecutiveSUEErrorIncrease().put(timeBeanId, 0.);
-			this.originalDemand.put(timeBeanId, new HashMap<>(this.getOdPairs().getdemand(timeBeanId)));
-			for(Id<AnalyticalModelODpair> odId:this.originalDemand.get(timeBeanId).keySet()) {
+			this.consecutiveSUEErrorIncrease.put(timeBeanId, 0.);
+			this.originalDemand.put(timeBeanId, new HashMap<>( this.odPairs.getDemand(timeBeanId) ));
+			for(Id<AnalyticalModelODpair> odId : this.originalDemand.get(timeBeanId).keySet()) {
 				double totalDemand=this.originalDemand.get(timeBeanId).get(odId);
-				AnalyticalModelODpair sk=this.getOdPairs().getODpairset().get(odId);
-				if(sk==null) {
-					System.out.println();
-				}
-				if(this.getOdPairs().getODpairset().get(odId).getTrRoutes().isEmpty()||this.getOdPairs().getODpairset().get(odId).getTrRoutes()==null) {
-					this.getCarDemand().get(timeBeanId).put(odId, totalDemand);
-				}else {
-					this.getCarDemand().get(timeBeanId).put(odId, 0.5*totalDemand);
-			
-				}
-				if(this.getOdPairs().getODpairset().get(odId).getSubPopulation().contains("GV")) {
-					this.getCarDemand().get(timeBeanId).put(odId, totalDemand);
-				}
+				AnalyticalModelODpair odPair = this.odPairs.getODpairset().get(odId);
+//				if(sk==null) {
+//					System.out.println();
+//				}
+				if(odPair.getSubPopulation().contains("GV") ||  //If it is GV subpopulation
+						odPair.getTrRoutes()==null || odPair.getTrRoutes().isEmpty()) { //If there are no transit routes
+					this.carDemand.get(timeBeanId).put(odId, totalDemand); //TODO: Put all demand to car?!
+				}else 
+					this.carDemand.get(timeBeanId).put(odId, 0.5*totalDemand); //Still put 0.5 if there are transit route
 			}
+			
 			logger.info("Starting from 0.5 auto and transit ratio");
-			if(this.originalDemand.get(timeBeanId).size()!=this.getCarDemand().get(timeBeanId).size()) {
+			if(this.originalDemand.get(timeBeanId).size()!=this.carDemand.get(timeBeanId).size()) {
 				logger.error("carDemand and total demand do not have same no of OD pair. This should not happen. Please check");
 			}
 		}
-		
 		printDemandTotalAndAgentTripStat();
 	}
 	

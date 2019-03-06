@@ -6,6 +6,7 @@ import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.population.Activity;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Plan;
+import org.matsim.api.core.v01.population.PlanElement;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
@@ -21,11 +22,25 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.TripChain;
  */
 
 public class CNLTripChain extends TripChain{
+	
+	private final String mode;
 
 	public CNLTripChain(Plan plan, TransitSchedule ts,Scenario scenario) {
 		super(plan, ts,scenario);
-		
+		mode = getModeFromPlan(plan);
 	}
+	
+	private static String getModeFromPlan(Plan plan) {
+		for (PlanElement pe: plan.getPlanElements()) {
+			if(pe instanceof Leg) {
+				Leg l = (Leg) pe;
+				return l.getMode();
+			}
+		}
+		throw new IllegalArgumentException("The plan does not have route!");
+	}
+	
+	String getMode() {return mode;}
 
 	@Override
 	protected AnalyticalModelRoute createRoute(Route r) {

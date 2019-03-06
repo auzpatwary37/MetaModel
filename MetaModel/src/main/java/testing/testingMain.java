@@ -66,7 +66,8 @@ public class testingMain {
 		
 		CNLSUEModel anaModel=new CNLSUEModel(config,timeBean);
 		anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getTransitSchedule(), scenario, fareCalculator);
-		anaModel.generateMATSimRoutes(0.7);
+		anaModel.generateMATSimRoutes(0.7, 30, 10);
+		anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation());
 		System.out.println("wait!!!!");
 				
 	}
