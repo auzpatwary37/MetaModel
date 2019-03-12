@@ -29,16 +29,15 @@ public class SignalFlowReductionGenerator {
 		SignalGroupsData signalsGroupsData = sd.getSignalGroupsData();
 		SignalSystemsData signalsSystemsData = sd.getSignalSystemsData();
 		
-		SignalSystemData ssd = signalsSystemsData.getSignalSystemData().get(Id.create(link.getToNode().toString(), SignalSystem.class)); //We spot for that signal system
+		SignalSystemData ssd = signalsSystemsData.getSignalSystemData().get(Id.create(link.getToNode().getId().toString(), SignalSystem.class)); //We spot for that signal system
 		double number_of_lane = 0;
 		double seconds_green = 0;
 		if(ssd == null) {
 			return 1.0; //No signal, so it is 1.0
 		}else {
+			double cycleTime = 0.0;
 			for(SignalData signalData: ssd.getSignalData().values()) { //Work for every signal
-				if(signalData.getLinkId().equals(link.getId())) {
-					number_of_lane++;
-					
+				if(signalData.getLinkId().equals(link.getId())) {					
 					//Step 1: Find the signal group Id
 					Id<SignalGroup> signalGroupDataId = null;
 					for(SignalGroupData sg: signalsGroupsData.getSignalGroupDataBySystemId( ssd.getId() ).values() ) {
@@ -46,9 +45,14 @@ public class SignalFlowReductionGenerator {
 							signalGroupDataId = sg.getId();
 						}
 					}
+					if(signalGroupDataId == null) {
+						continue; //We ignore this signal if it is not found in any group
+					}
 					
+					number_of_lane++;
 					//Step 2: Find the green time of this signal group.
 					for(SignalPlanData sp: signalControlData.getSignalSystemControllerDataBySystemId().get( ssd.getId() ).getSignalPlanData().values()) {
+						cycleTime = sp.getCycleTime();
 						SignalGroupSettingsData signalGroupSetting = sp.getSignalGroupSettingsDataByGroupId().get(signalGroupDataId);
 						double time = signalGroupSetting.getDropping() - signalGroupSetting.getOnset();
 						seconds_green += time;
@@ -56,7 +60,11 @@ public class SignalFlowReductionGenerator {
 					}
 				}
 			}
-			return seconds_green / number_of_lane;
+			if(number_of_lane > 0) {
+				return seconds_green / (cycleTime * number_of_lane);
+			}else {
+				return 1.0; //If there is no lane with a signal, return a 1.0 means no signal.
+			}
 		}
 	}
 }

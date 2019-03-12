@@ -34,13 +34,7 @@ public abstract class AnalyticalModelLink implements Link{
 	protected double linkTransitVolume=0;
 	protected double linkTransitPassenger=0;
 	protected double linkTravelTime=0;
-	protected double gcRatio=1;
-	
-	
-	
-	
-
-
+	protected double gcRatio=1; //This is the gcRatio of the links.
 	/**
 	 * Constructor
 	 * @param link: The wrapped Link
@@ -48,8 +42,6 @@ public abstract class AnalyticalModelLink implements Link{
 	public AnalyticalModelLink(Link link) {
 		this.link=link;
 	}
-	
-	
 	/**
 	 * -------------------------------Wrapper class functions---------------------------------------------------------------
 	 * 

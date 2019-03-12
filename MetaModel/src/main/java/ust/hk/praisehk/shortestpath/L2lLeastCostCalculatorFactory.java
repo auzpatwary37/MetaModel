@@ -29,7 +29,7 @@ public class L2lLeastCostCalculatorFactory {
 
 	public L2lLeastCostCalculatorFactory(Scenario scenario, Set<String> allowedModes, AnalyticalModel trafficModel) {
 		Network network=scenario.getNetwork();
-		LinkToLinkTravelTime l2ltravelTimes = new MetaModelTravelTimeAndDisutility(-50, 1, -50,trafficModel); // link to link travel time
+		LinkToLinkTravelTime l2ltravelTimes = new MetaModelTravelTimeAndDisutility(-50, 1, -50, trafficModel); // link to link travel time
 		NetworkTurnInfoBuilderI turnInfoBuilder = new CustomNetworkTurnInfoBuilder(scenario,
 				allowedModes); // Turn info of the network
 

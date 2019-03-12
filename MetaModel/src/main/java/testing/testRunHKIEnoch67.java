@@ -185,7 +185,7 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), 
 			scenario.getTransitSchedule(), scenario, fareCalculator);
 	anaModel.generateMATSimRoutes(0.7, 2, 10);
-	anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation());
+	anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation(), false);
 	System.out.println("wait!!!!");
 	// Add the signal module to the controller
 	//Signals.configure(controler);

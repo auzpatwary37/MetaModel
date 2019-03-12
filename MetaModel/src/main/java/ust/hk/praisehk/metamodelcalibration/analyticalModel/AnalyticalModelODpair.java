@@ -36,7 +36,7 @@ public class AnalyticalModelODpair {
 	private double agentTrCounter=0;
 	//private double ExpectedMaximumCarUtility;
 	private double ExpectedMaximumTransitUtility;
-	private List<Id<Person>> personIdList=new ArrayList<>();
+	private List<Id<Person>> personIdList = new ArrayList<>(); //TODO: Remove it.
 	
 	private final Node onode;
 	private final Node dnode;
@@ -60,7 +60,7 @@ public class AnalyticalModelODpair {
 	private Map<Id<AnalyticalModelTransitRoute>,AnalyticalModelTransitRoute> Transitroutes=new HashMap<>();
 	private Map<Id<AnalyticalModelTransitRoute>, Integer> transitRouteCounter=new HashMap<>();
 	private ArrayList<AnalyticalModelTransitRoute> finalTrRoutes;
-	private Map<String,HashMap<Id<AnalyticalModelRoute>,Double>> RouteUtility=new ConcurrentHashMap<>();
+	private Map<String,HashMap<Id<AnalyticalModelRoute>,Double>> routeUtility=new ConcurrentHashMap<>();
 	private Map<String,HashMap<Id<AnalyticalModelTransitRoute>, Double>> TrRouteUtility=new ConcurrentHashMap<>();
 	private final Map<String, Tuple<Double,Double>>timeBean;
 	private Map<String, ArrayList<AnalyticalModelTransitRoute>> timeBasedTransitRoutes=new HashMap<>();
@@ -69,8 +69,8 @@ public class AnalyticalModelODpair {
 	private int minRoute=5;
 	private LinkedHashMap<Tuple<Id<Link>,Id<Link>>,Integer> startAndEndLinkIds=new LinkedHashMap<>();
 
-	private int totalTrip = 0;
-	private List<Id<Person>> personIdsConcerned = new ArrayList<>();
+	private int totalLeg = 0;
+	//private List<Id<Person>> personIdsConcerned = new ArrayList<>();
 	//TODO:Shift Node Based Coordinates to FacilityBased Coordinates
 	
 	/**
@@ -124,7 +124,7 @@ public class AnalyticalModelODpair {
 		ODpairId=Id.create(onode.getId().toString()+"_"+dnode.getId().toString(), AnalyticalModelODpair.class);
 		this.timeBean=timeBean2;
 		for(String timeBeanId:this.timeBean.keySet()) {
-			this.RouteUtility.put(timeBeanId, new HashMap<Id<AnalyticalModelRoute>, Double>());
+			this.routeUtility.put(timeBeanId, new HashMap<Id<AnalyticalModelRoute>, Double>());
 			this.TrRouteUtility.put(timeBeanId, new HashMap<Id<AnalyticalModelTransitRoute>, Double>());
 		}
 		
@@ -140,7 +140,7 @@ public class AnalyticalModelODpair {
 		ODpairId=Id.create(onode.getId().toString()+"_"+dnode.getId().toString()+"_"+subPopulation, AnalyticalModelODpair.class);
 		this.timeBean=timeBean2;
 		for(String timeBeanId:this.timeBean.keySet()) {
-			this.RouteUtility.put(timeBeanId, new HashMap<Id<AnalyticalModelRoute>, Double>());
+			this.routeUtility.put(timeBeanId, new HashMap<Id<AnalyticalModelRoute>, Double>());
 			this.TrRouteUtility.put(timeBeanId, new HashMap<Id<AnalyticalModelTransitRoute>, Double>());
 		}
 		this.subPopulation=subPopulation;
@@ -158,7 +158,6 @@ public class AnalyticalModelODpair {
 	 * @return
 	 */
 	public double getSpecificPeriodODDemand(String timeBeanId){
-		
 		return this.demand.get(timeBeanId);
 	}
 	
@@ -203,7 +202,7 @@ public class AnalyticalModelODpair {
 		this.agentTrCounter=0;
 		//this.ExpectedMaximumCarUtility=0;
 		this.ExpectedMaximumTransitUtility=0;
-		this.RouteUtility.clear();
+		this.routeUtility.clear();
 		this.TrRouteUtility.clear();
 	}
 	
@@ -307,17 +306,22 @@ public class AnalyticalModelODpair {
 	 * This is a convenient function to add trip without having a route.
 	 * Only visible in package
 	 * @param trip
+	 * @param carOnly A boolean indicate whether only the car trip is considered or not.
 	 */
-	void addtripWithoutRoute(Trip trip){
-		personIdsConcerned.add( trip.getPersonId() ); //Store the person ID.
-		String timeId = getTimeBean(trip.getStartTime());
-		demand.put(timeId, demand.get(timeId)+trip.getCarPCU());
-		if(this.startAndEndLinkIds.containsKey(trip.getStartAndEndLinkId())) {
-			this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),this.startAndEndLinkIds.get(trip.getStartAndEndLinkId())+1);
-		}else {
-			this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),1);
+	void addtripWithoutRoute(Trip trip, boolean carOnly){
+		if( !carOnly || trip.getMode().equals("car")) { //The operation is only for car trips is carOnly==True
+			personIdList.add( trip.getPersonId() ); //Store the person ID.
+			String timeId = getTimeBean(trip.getStartTime());
+			demand.put(timeId, demand.get(timeId)+trip.getCarPCU());
+			if(this.startAndEndLinkIds.containsKey(trip.getStartAndEndLinkId())) {
+				this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),this.startAndEndLinkIds.get(trip.getStartAndEndLinkId())+1);
+			}else {
+				this.startAndEndLinkIds.put(trip.getStartAndEndLinkId(),1);
+			}
+			totalLeg++; //Number of trip is increased by 1.
+			
+			//TODO: Where is agentCarCounter and agentTrCounter?
 		}
-		totalTrip++; //Number of trip is increased by 1.
 	}
 	
 	/**
@@ -335,7 +339,7 @@ public class AnalyticalModelODpair {
 		
 		for(Tuple<Id<Link>,Id<Link>> linkIds:this.startAndEndLinkIds.keySet()) {
 			index[i]=i;
-			prob[i]=this.startAndEndLinkIds.get(linkIds)*1./this.totalTrip;
+			prob[i]=this.startAndEndLinkIds.get(linkIds)*1./this.totalLeg;
 			i++;
 		}
 		EnumeratedIntegerDistribution dist=new EnumeratedIntegerDistribution(index,prob);
@@ -387,7 +391,7 @@ public class AnalyticalModelODpair {
 				if(((double)e.getValue()/(double)this.agentCARCounter*100)>routePercentage) {
 					this.finalRoutes.add(this.RoutesWithDescription.get(e.getKey()));
 					for(String timeBeanId:this.timeBean.keySet()) {
-						this.RouteUtility.get(timeBeanId).put(e.getKey(), 0.0);
+						this.routeUtility.get(timeBeanId).put(e.getKey(), 0.0);
 					}
 				}
 			}
@@ -406,7 +410,7 @@ public class AnalyticalModelODpair {
 						if(e.getValue()>tripCount.get(this.minRoute-1)) {
 							this.finalRoutes.add(this.RoutesWithDescription.get(e.getKey()));
 							for(String timeBeanId:this.timeBean.keySet()) {
-								this.RouteUtility.get(timeBeanId).put(e.getKey(), 0.0);
+								this.routeUtility.get(timeBeanId).put(e.getKey(), 0.0);
 							}
 						}
 					}
@@ -463,14 +467,14 @@ public class AnalyticalModelODpair {
 	}
 	
 	public void updateRouteUtility(Id<AnalyticalModelRoute> routeId, double utility,String timeBeanId) {
-		this.RouteUtility.get(timeBeanId).put(routeId, utility);
+		this.routeUtility.get(timeBeanId).put(routeId, utility);
 	}
 	public void updateTrRouteUtility(Id<AnalyticalModelTransitRoute> id, double utility,String timeBeanId) {
 		this.TrRouteUtility.get(timeBeanId).put(id, utility);
 	}
 	
 	public HashMap<Id<AnalyticalModelRoute>, Double> getRouteUtility(String timeBeanId) {
-		return RouteUtility.get(timeBeanId);
+		return routeUtility.get(timeBeanId);
 	}
 
 	public HashMap<Id<AnalyticalModelTransitRoute>, Double> getTrRouteUtility(String timeBeanId) {
@@ -496,13 +500,12 @@ public class AnalyticalModelODpair {
 		//System.out.println();
 		//Calculate the log-sum
 		Map<Id<AnalyticalModelRoute>,Double> logSumRouteUtility=new HashMap<>();
-		for(HashMap<Id<AnalyticalModelRoute>,Double> utilityMap : this.RouteUtility.values()) {
+		for(HashMap<Id<AnalyticalModelRoute>,Double> utilityMap : this.routeUtility.values()) { //Sum the utilities across every route.
 			for(Id<AnalyticalModelRoute> routeId : utilityMap.keySet()) {
 				if(utilityMap.get(routeId)!=0) {
 					if(logSumRouteUtility.containsKey(routeId)) {
 						logSumRouteUtility.put(routeId,logSumRouteUtility.get(routeId)+Math.exp(utilityMap.get(routeId)));
 					}else {
-						double utility=utilityMap.get(routeId);
 						logSumRouteUtility.put(routeId,Math.exp(utilityMap.get(routeId)));
 					}
 				}
@@ -529,11 +532,11 @@ public class AnalyticalModelODpair {
 	}
 
 	public double getExpectedMaximumCarUtility(LinkedHashMap<String,Double> params, LinkedHashMap<String,Double> anaParams, String timeBeanId) {
-		if(this.RouteUtility.get(timeBeanId).size()==0) {
+		if(this.routeUtility.get(timeBeanId).size()==0) {
 			return Double.NEGATIVE_INFINITY;
 		}
 		double logsum=0;
-		for(double utility:this.RouteUtility.get(timeBeanId).values()) {
+		for(double utility:this.routeUtility.get(timeBeanId).values()) {
 			logsum+=Math.exp(utility);
 		}
 		return 1 * Math.log(logsum) / anaParams.get("LinkMiu");
@@ -615,7 +618,7 @@ public class AnalyticalModelODpair {
 	}
 	
 	public List<Id<Person>> getPersonIds(){
-		return personIdsConcerned;
+		return personIdList;
 	}
 
 	
@@ -705,6 +708,10 @@ public class AnalyticalModelODpair {
 			this.timeBasedTransitRoutes.put(timeBeanId,timeBasedTrRoutes);
 		}
 	}
+	}
+	
+	public double getTotalTrip() {
+		return this.totalLeg;
 	}
 
 	public double getAgentCounter() {

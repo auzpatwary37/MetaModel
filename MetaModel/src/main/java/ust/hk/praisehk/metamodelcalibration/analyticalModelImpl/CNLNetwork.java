@@ -122,7 +122,12 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 	@Override
 	public void updateGCRatio(SignalFlowReductionGenerator signalGC) {
 		for(CNLLink link:this.getCNLLinks().values()) {
-			link.setGcRatio(signalGC.getGCratio(link));
+			double gcRatio = signalGC.getGCratio(link); //Try
+			if(gcRatio>=0 && gcRatio <=1)
+				link.setGcRatio(gcRatio);
+			else {
+				throw new RuntimeException("The GC ratio is wrong!");
+			}
 		}
 	}
 

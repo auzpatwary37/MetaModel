@@ -61,7 +61,7 @@ public class MetaModelTravelTimeAndDisutility implements TravelDisutility, Trave
 
 	@Override
 	public double getLinkTravelTime(Link link, double time, Person person, Vehicle vehicle) {
-		return this.trafficModel.getAverageLinkTravelTime(link.getId());
+		return this.trafficModel.getAverageLinkTravelTime(link.getId(), time);
 	}
 
 	/**

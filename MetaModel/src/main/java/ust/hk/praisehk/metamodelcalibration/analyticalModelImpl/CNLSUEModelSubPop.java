@@ -177,12 +177,19 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		this.odPairs = new CNLODpairs(scenario, this.timeBeans); //Create ODpairs
 		super.originalNetwork=network;
 		
+		boolean carOnly = true; //TODO: Remove this parameter to include the whole transit.
 		//trial
 		Network net = NetworkUtils.createNetwork();
 		new MatsimNetworkReader(net).readFile("data/odNetTPUSB.xml");
-		this.odPairs.generateODpairsetWithoutRoutesSubPop(net, population); //Load the network and make the OD pairs
+		this.odPairs.generateODpairsetWithoutRoutesSubPop(net, population, true, carOnly); //Load the network and make the OD pairs
 		
-		SignalFlowReductionGenerator sg=new SignalFlowReductionGenerator(scenario);
+		double totalTrip = 0;
+		for(AnalyticalModelODpair odPair: this.odPairs.getODpairset().values()) {
+			totalTrip += odPair.getTotalTrip();
+		}
+		logger.info("Total trip considering = "+totalTrip);
+		
+		SignalFlowReductionGenerator sg = new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);
 		for(String timeBin:this.timeBeans.keySet()) { ///Create network for each time bin
 			CNLNetwork analyticalNetwork = new CNLNetwork(network);

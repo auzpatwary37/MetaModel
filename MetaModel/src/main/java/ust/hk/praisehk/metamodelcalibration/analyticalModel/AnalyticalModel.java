@@ -81,5 +81,8 @@ public interface AnalyticalModel {
 			Map<Integer, LinkedHashMap<String, Double>> params, LinkedHashMap<String, Double> initialParam,
 			int currentParamNo);
 
-	public double getAverageLinkTravelTime(Id<Link> id);
+	@Deprecated
+	public double getAverageLinkTravelTime(Id<Link> id); //Now is useless, with a more fine getLinkTravelTime with time.
+	
+	public double getAverageLinkTravelTime(Id<Link> id, double time);
 }

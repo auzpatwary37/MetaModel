@@ -168,6 +168,21 @@ public class ParamReader {
 		return timeBean;
 	}
 	
+	public static HashMap<String, Tuple<Double,Double>> getMoreCoarseTimeBean() {
+		HashMap<String, Tuple<Double,Double>> timeBean=new HashMap<>();
+		timeBean.put("BeforeMorningPeak", new Tuple<Double,Double>(0.0,25200.));
+		timeBean.put("MorningPeak1", new Tuple<Double,Double>(25200.,28800.));
+		timeBean.put("MorningPeak2", new Tuple<Double,Double>(28800.,32400.));
+		timeBean.put("MorningPeak3", new Tuple<Double,Double>(32400.,36000.));
+		timeBean.put("AfterMorningPeak", new Tuple<Double,Double>(36000.,43200.));
+		timeBean.put("Afternoon", new Tuple<Double,Double>(43200.,57600.));
+		timeBean.put("EveningPeak1", new Tuple<Double,Double>(57600.,63000.));
+		timeBean.put("EveningPeak2", new Tuple<Double,Double>(63000.,66600.));
+		timeBean.put("EveningPeak3", new Tuple<Double,Double>(66600.,70200.));
+		timeBean.put("Evening", new Tuple<Double,Double>(70200.,75600.));
+		timeBean.put("AfterEveningPeak", new Tuple<Double,Double>(75600.,86400.));
+		return timeBean;
+	}
 	
 	/**
 	 * This will scale up the parameter from no format to Parameter name format

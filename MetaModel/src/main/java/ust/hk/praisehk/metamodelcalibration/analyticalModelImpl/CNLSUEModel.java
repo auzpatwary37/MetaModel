@@ -73,64 +73,64 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * One meta-model calibration style can be used to fix 
 	 * 
 	 */
-	
-		protected final Logger logger=Logger.getLogger(CNLSUEModel.class);
-		private String fileLoc="traget/";
-		public String getFileLoc() {
-			return fileLoc;
-		}
 
-		public void setFileLoc(String fileLoc) {
-			this.fileLoc = fileLoc;
-		}
+	protected final Logger logger=Logger.getLogger(CNLSUEModel.class);
+	private String fileLoc="traget/";
+	public String getFileLoc() {
+		return fileLoc;
+	}
 
-		protected Map<String,Double> consecutiveSUEErrorIncrease=new ConcurrentHashMap<>();
-		private LinkedHashMap<String,Double> AnalyticalModelInternalParams=new LinkedHashMap<>();
-		protected LinkedHashMap<String,Double> Params=new LinkedHashMap<>();
-		private LinkedHashMap<String,Tuple<Double,Double>> AnalyticalModelParamsLimit=new LinkedHashMap<>();
-		
-		
-		private double alphaMSA=1.9;//parameter for decreasing MSA step size
-		private double gammaMSA=.1;//parameter for decreasing MSA step size
-		
-		//other Parameters for the Calibration Process
-		private double tollerance=0.01;
-		private double tolleranceLink=0.1;
-		//user input
-	
-		protected Map<String, Tuple<Double,Double>> timeBeans;
-		
-		//MATSim Input
-		protected Map<String, AnalyticalModelNetwork> networks=new ConcurrentHashMap<>();
-		protected Network originalNetwork;
-		private TransitSchedule ts;
-		protected Scenario scenario;
-		@Deprecated private Population population;
-		protected Map<String,FareCalculator> fareCalculator=new HashMap<>();
-		
-		//Used Containers
-		protected Map<String,ArrayList<Double>> beta=new ConcurrentHashMap<>(); //This is related to weighted MSA of the SUE
-		protected Map<String,ArrayList<Double>> error=new ConcurrentHashMap<>();
-		protected Map<String,ArrayList<Double>> error1=new ConcurrentHashMap<>();//This is related to weighted MSA of the SUE
-		
-		//TimebeanId vs demands map
-		protected Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> demand=new ConcurrentHashMap<>();//Holds ODpair based demand
-		protected Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> originalDemand=new ConcurrentHashMap<>();//This will hold the original demand and will not be modified the demand on the other hand can be modified for incremental loading
-		protected Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> carDemand=new ConcurrentHashMap<>(); 
-		protected CNLODpairs odPairs;
-		protected Map<String,Map<Id<TransitLink>,TransitLink>> transitLinks = new ConcurrentHashMap<>();
-			
-		@Deprecated protected Population lastPopulation;
+	public void setFileLoc(String fileLoc) {
+		this.fileLoc = fileLoc;
+	}
+
+	protected Map<String,Double> consecutiveSUEErrorIncrease=new ConcurrentHashMap<>();
+	private LinkedHashMap<String,Double> AnalyticalModelInternalParams=new LinkedHashMap<>();
+	protected LinkedHashMap<String,Double> Params=new LinkedHashMap<>();
+	private LinkedHashMap<String,Tuple<Double,Double>> AnalyticalModelParamsLimit=new LinkedHashMap<>();
 	
 	
-		//All the parameters name
-		//They are kept public to make it easily accessible as they are final they can not be modified
-		public static final String BPRalphaName="BPRalpha";
-		public static final String BPRbetaName="BPRbeta";
-		public static final String LinkMiuName="LinkMiu";
-		public static final String ModeMiuName="ModeMiu";
-		public static final String TransferalphaName="Transferalpha";
-		public static final String TransferbetaName="Transferbeta";
+	private double alphaMSA=1.9;//parameter for decreasing MSA step size
+	private double gammaMSA=.1;//parameter for decreasing MSA step size
+	
+	//other Parameters for the Calibration Process
+	private double tollerance=0.01;
+	private double tolleranceLink=0.1;
+	//user input
+
+	protected Map<String, Tuple<Double,Double>> timeBeans;
+	
+	//MATSim Input
+	protected Map<String, AnalyticalModelNetwork> networks=new ConcurrentHashMap<>();
+	protected Network originalNetwork;
+	private TransitSchedule ts;
+	protected Scenario scenario;
+	@Deprecated private Population population;
+	protected Map<String,FareCalculator> fareCalculator=new HashMap<>();
+	
+	//Used Containers
+	protected Map<String,ArrayList<Double>> beta=new ConcurrentHashMap<>(); //This is related to weighted MSA of the SUE
+	protected Map<String,ArrayList<Double>> error=new ConcurrentHashMap<>();
+	protected Map<String,ArrayList<Double>> error1=new ConcurrentHashMap<>();//This is related to weighted MSA of the SUE
+	
+	//TimebeanId vs demands map
+	protected Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> demand=new ConcurrentHashMap<>();//Holds ODpair based demand
+	protected Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> originalDemand=new ConcurrentHashMap<>();//This will hold the original demand and will not be modified the demand on the other hand can be modified for incremental loading
+	protected Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> carDemand=new ConcurrentHashMap<>(); 
+	protected CNLODpairs odPairs;
+	protected Map<String,Map<Id<TransitLink>,TransitLink>> transitLinks = new ConcurrentHashMap<>();
+		
+	@Deprecated protected Population lastPopulation;
+
+
+	//All the parameters name
+	//They are kept public to make it easily accessible as they are final they can not be modified
+	public static final String BPRalphaName="BPRalpha";
+	public static final String BPRbetaName="BPRbeta";
+	public static final String LinkMiuName="LinkMiu";
+	public static final String ModeMiuName="ModeMiu";
+	public static final String TransferalphaName="Transferalpha";
+	public static final String TransferbetaName="Transferbeta";
 
 		
 	public CNLSUEModel(Map<String, Tuple<Double, Double>> timeBean) {
@@ -246,7 +246,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		int agentTrip=0;
 		//int matsimTrip=0;
 		int agentDemand=0;
-		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()) {
+		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()) {
 			agentTrip+=odPair.getAgentCounter();
 			for(String s:odPair.getTimeBean().keySet()) {
 				agentDemand+=odPair.getDemand().get(s);
@@ -301,13 +301,14 @@ public class CNLSUEModel implements AnalyticalModel{
 		printDemandTotalAndAgentTripStat();
 	}
 	
+	@Deprecated //This function should not be used, only the one with subpopulations should be used actually.
 	public void generateRoutesAndODWithoutRoute(Population population,Network network,TransitSchedule transitSchedule,
 			Scenario scenario,Map<String,FareCalculator> fareCalculator) {
 		//this.setLastPopulation(population);
 		//System.out.println("");
 		this.scenario=scenario;
 		this.odPairs = new CNLODpairs(scenario,this.timeBeans);
-		this.getOdPairs().generateODpairsetWithoutRoutes(population);
+		this.odPairs.generateODpairsetWithoutRoutes(null, population, true);
 		this.originalNetwork=network;
 		SignalFlowReductionGenerator sg=new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);
@@ -372,7 +373,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * This variation is for enoch
 	 * This will not perform sue only, rather genrate routeset close to matsim
 	 * The function will deploy a shortest path algorithm based on the output of the previous algorithm
-	 * THe pt mode ratio is between 0 to 1 
+	 * THe pt mode ratio is between 0 to 1 (The pt ratio may not be needed)
 	 */
 	public AnalyticalModelODpairs generateMATSimRoutes(double defaultPtModeRatio, int numberOfIterations, int numOfRoutes) {
 		LinkedHashMap<String,Double> params=new LinkedHashMap<>(this.Params);
@@ -527,12 +528,27 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 	}
 	
+	private static void offsetPlanTime(Plan plan, double offSet) {
+		for(PlanElement pe: plan.getPlanElements()) {
+			if(pe instanceof Activity) {
+				if(((Activity) pe).getStartTime() <= offSet) {
+					continue; //Don't do the offset for it may become negative time.
+				}
+				((Activity) pe).setStartTime(((Activity) pe).getStartTime() + offSet);
+				((Activity) pe).setEndTime(((Activity) pe).getEndTime() + offSet);
+			}
+			if(pe instanceof Leg) {
+				((Leg) pe).setDepartureTime(((Leg) pe).getDepartureTime()+offSet);
+			}
+		}
+	}
+	
 	/**
 	 * This is a method written by Enoch to assign the current routes available to match MATSim population
 	 * It assumes only one plan is there.
 	 * @param population
 	 */
-	public void assignRoutesToMATSimPopulation(Population population) {
+	public void assignRoutesToMATSimPopulation(Population population, boolean offsetTime) {
 		int assignedCount = 0;
 		//What we have:
 		Map<Id<AnalyticalModelODpair>, AnalyticalModelODpair> odPairSet = this.odPairs.getODpairset(); //Set of OD pair
@@ -545,6 +561,12 @@ public class CNLSUEModel implements AnalyticalModel{
 				Id<Link> lastLinkId = null; //Last linkId of activity
 				Leg lastLeg = null; //Last leg
 				String lastLegtimeBin = null; //Last time bin of leg.
+				
+				if(offsetTime) {
+					double timeVariation = Math.random() * 1800 - 3600; //Do a random time variation
+					offsetPlanTime(p, timeVariation);
+				}
+				
 				for(PlanElement pe: p.getPlanElements()) {
 					if(pe instanceof Activity) {
 						Coord coord = ((Activity) pe).getCoord();
@@ -566,7 +588,7 @@ public class CNLSUEModel implements AnalyticalModel{
 					if(pe instanceof Leg) {
 						lastLeg = (Leg) pe;
 					}
-				}
+				}				
 			}
 		}
 		//Step 2:
@@ -635,7 +657,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			odpair.updateRouteUtility(route.getRouteId(), utility, timeBeanId);
 			
 			//This Check is to make sure the exp(utility) do not go to infinity.
-			if(utility>300||utility<-300) {
+			if(utility>300) {
 				logger.error("utility is either too small or too large. Increase or decrease the link miu accordingly. The utility is "+utility+" for route "+route.getRouteId());
 				throw new IllegalArgumentException("stop!!!");
 			}
@@ -1090,16 +1112,14 @@ public class CNLSUEModel implements AnalyticalModel{
 		for(String timeBean:this.demand.keySet()) {
 			for(Id<AnalyticalModelODpair> odPairId:this.originalDemand.get(timeBean).keySet()) {
 				double totalDemand = this.originalDemand.get(timeBean).get(odPairId)*percentage;
-				if(this.getOdPairs().getODpairset().get(odPairId).getTrRoutes().isEmpty()) { //The case of no transit
+				
+				if(this.odPairs.getODpairset().get(odPairId).getTrRoutes().isEmpty() || //No transit route
+						odPairId.toString().contains("GV")) {  //Subpopulation of GV
 					this.demand.get(timeBean).put(odPairId, totalDemand);
 					this.carDemand.get(timeBean).put(odPairId, totalDemand);
 				}else { //If there is transit
 					this.demand.get(timeBean).put(odPairId, totalDemand);
 					this.carDemand.get(timeBean).put(odPairId, totalDemand * initialCarDemandPercentage/100);
-				}
-				if(odPairId.toString().contains("GV")) { //If it is GV, just put all to the demand
-					this.demand.get(timeBean).put(odPairId, totalDemand);
-					this.carDemand.get(timeBean).put(odPairId, totalDemand);
 				}
 			}
 		}
@@ -1348,11 +1368,25 @@ public class CNLSUEModel implements AnalyticalModel{
 
 	@Override
 	public double getAverageLinkTravelTime(Id<Link> linkId) {
-		double travelTime=0;
-		for(String s:this.timeBeans.keySet()) {
-			travelTime+= ((AnalyticalModelLink)this.networks.get(s).getLinks().get(linkId)).getLinkTravelTime(this.timeBeans.get(s), this.Params, this.AnalyticalModelInternalParams);
+		throw new RuntimeException("Should be replaced by the averageLinkTravelTime with time!");
+		//I would rather remove this function to avoid confusion. Enoch Mar 2019.
+		
+//		double travelTime=0;
+//		for(String s:this.timeBeans.keySet()) {
+//			travelTime+= ((AnalyticalModelLink)this.networks.get(s).getLinks().get(linkId)).getLinkTravelTime(this.timeBeans.get(s), this.Params, this.AnalyticalModelInternalParams);
+//		}
+//		return travelTime/this.timeBeans.size();
+	}
+	
+	public static List<String> timeBinsWithDemand(Map<String, Double> timeBinToDemandMap) {
+		List<String> timeBinFound = new ArrayList<>();
+		for(String timebin: timeBinToDemandMap.keySet()) {
+			double odPairDemand = timeBinToDemandMap.get(timebin);
+			if(odPairDemand>0) {
+				timeBinFound.add(timebin);
+			}
 		}
-		return travelTime/this.timeBeans.size();
+		return timeBinFound;
 	}
 
 	/**
@@ -1361,13 +1395,11 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * This will signal the ODpairs to generate routes. This can be done to specific od pairs in future
 	 * 
 	 */
-	public void generateRoute() {
+	protected void generateRoute() {
 		L2lLeastCostCalculatorFactory shortestPathCalculatorFactory=new L2lLeastCostCalculatorFactory(scenario, Sets.newHashSet(TransportMode.car), this);
 		Boolean mthread=true;
 		if(mthread==false) {
-		
-		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()) {
-				
+			for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()) {
 				//double randStartTime=this.timeBeans.get(timeBean).getFirst()+Math.random()*(this.timeBeans.get(timeBean).getSecond()-this.timeBeans.get(timeBean).getFirst());
 				Link startLink=null;
 				Link endLink=null;
@@ -1380,12 +1412,14 @@ public class CNLSUEModel implements AnalyticalModel{
 					startLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getOriginNode().getCoord());
 					endLink=NetworkUtils.getNearestLink(this.scenario.getNetwork(), odPair.getDestinationNode().getCoord());
 				}
-				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, 0, null, null);
-				//System.out.println("");
-				odPair.addCarRoute(new CNLRoute(path,startLink,endLink));
-			
-
-		}
+				
+				//Get a random time bin
+				for(String timeBin: timeBinsWithDemand(odPair.getDemand())) {				
+					Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, 
+							this.timeBeans.get(timeBin).getFirst(), null, null);
+					odPair.addCarRoute(new CNLRoute(path,startLink,endLink));
+				}
+			}
 		}else {
 			int processor=Runtime.getRuntime().availableProcessors();
 			RouteGenerationRunnable[] routeThreads=new RouteGenerationRunnable[processor];
@@ -1403,8 +1437,6 @@ public class CNLSUEModel implements AnalyticalModel{
 				if(j>(i+1)*odPerThread-1) {
 					i=i+1;
 				}
-					
-				
 			}
 			
 			Thread[] threads=new Thread[processor];
@@ -1425,7 +1457,22 @@ public class CNLSUEModel implements AnalyticalModel{
 			}
 		}
 	}
-	
+
+	/**
+	 * This function is for getting the average link travel time in the same timeBin
+	 */
+	@Override
+	public double getAverageLinkTravelTime(Id<Link> linkId, double time) {
+		double linkTime = 0.0;
+		for(String s : this.timeBeans.keySet()) {
+			Tuple<Double, Double> times = this.timeBeans.get(s);
+			linkTime = ((AnalyticalModelLink)this.networks.get(s).getLinks().get(linkId)).getLinkTravelTime(times, this.Params, this.AnalyticalModelInternalParams);
+			if(times.getFirst()<=time && time<times.getSecond())
+				return linkTime;
+		}
+		return linkTime * 1000; //Return the final link time if their time is not found.
+		//throw new IllegalArgumentException("Error in get the appropriate time bin with time "+time+" !!");
+	}
 }
 
 
@@ -1433,12 +1480,14 @@ class RouteGenerationRunnable implements Runnable{
 	private HashMap<Id<AnalyticalModelODpair>,AnalyticalModelODpair> odPairs=new HashMap<>();
 	private Network originalNetwork;
 	private L2lLeastCostCalculatorFactory shortestPathCalculatorFactory;
+	private final Map<String, Tuple<Double,Double>> timeBeans;
 	private static final AtomicInteger count = new AtomicInteger();
 	private final Logger logger = Logger.getLogger(RouteGenerationRunnable.class);
 	
 	public RouteGenerationRunnable(Scenario scenario,AnalyticalModel model) {
 		this.originalNetwork=scenario.getNetwork();
 		this.shortestPathCalculatorFactory=new L2lLeastCostCalculatorFactory(scenario, Sets.newHashSet(TransportMode.car), model);
+		this.timeBeans = model.getTimeBeans();
 	}
 	
 	public void addOdPair(AnalyticalModelODpair od) {
@@ -1456,19 +1505,19 @@ class RouteGenerationRunnable implements Runnable{
 			Link endLink=null;
 			
 			Tuple<Id<Link>,Id<Link>> linkTuple=od.getStartAndEndLinkIds();
-				if(linkTuple!=null) {
-					startLink=this.originalNetwork.getLinks().get(linkTuple.getFirst());
-					endLink=this.originalNetwork.getLinks().get(linkTuple.getSecond());
-				}else {
-					startLink=NetworkUtils.getNearestLink(this.originalNetwork, od.getOriginNode().getCoord());
-					endLink=NetworkUtils.getNearestLink(this.originalNetwork, od.getDestinationNode().getCoord());
-				}
-				
-				
-		
-			Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, (int)(24*3600*Math.random()), null, null);
-			//System.out.println("");
-			od.addCarRoute(new CNLRoute(path,startLink,endLink));
+			if(linkTuple!=null) {
+				startLink=this.originalNetwork.getLinks().get(linkTuple.getFirst());
+				endLink=this.originalNetwork.getLinks().get(linkTuple.getSecond());
+			}else {
+				startLink=NetworkUtils.getNearestLink(this.originalNetwork, od.getOriginNode().getCoord());
+				endLink=NetworkUtils.getNearestLink(this.originalNetwork, od.getDestinationNode().getCoord());
+			}
+			
+			for(String timeBin: CNLSUEModel.timeBinsWithDemand(od.getDemand())) {				
+				Path path = shortestPathCalculatorFactory.getRoutingAlgo().calcLeastCostPath(startLink, endLink, 
+						this.timeBeans.get(timeBin).getFirst(), null, null);
+				od.addCarRoute(new CNLRoute(path,startLink,endLink));
+			}
 		}
 	}
 }
