@@ -47,7 +47,7 @@ public class AnalyticalModelODpair {
 	//private Map <Id<VehicleType>,VehicleType> vt;
 	private Coord[] c;
 	private final Id<AnalyticalModelODpair> ODpairId;
-	private LinkedHashMap<Id<AnalyticalModelRoute>, Integer> routeset=new LinkedHashMap<>();
+	private LinkedHashMap<Id<AnalyticalModelRoute>, Integer> routeset=new LinkedHashMap<>(); //I can't see why it should be a Map instead of List. Enoch.
 	private Map<Id<AnalyticalModelRoute>,AnalyticalModelRoute> RoutesWithDescription=new HashMap<>();
 	private ArrayList<AnalyticalModelRoute> finalRoutes;
 	private Map<Id<Link>,ArrayList<AnalyticalModelRoute>> linkIncidence=null;

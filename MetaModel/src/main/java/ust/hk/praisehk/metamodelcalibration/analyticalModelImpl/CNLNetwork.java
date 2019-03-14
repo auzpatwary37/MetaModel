@@ -7,6 +7,7 @@ import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
+import org.matsim.lanes.Lanes;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
@@ -20,47 +21,49 @@ import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
  *
  */
 public class CNLNetwork extends AnalyticalModelNetwork{
-
 	/**
 	 * constructor same as SUE Network
 	 */
-	public CNLNetwork(Network network){
+	public CNLNetwork(Network network, Lanes lanes){
 		
 		for(Id<Node> NodeId:network.getNodes().keySet()){
-			
 			this.network.addNode(cloneNode(network.getNodes().get(NodeId),network.getFactory()));
 		}
 		for(Id<Link> linkId:network.getLinks().keySet()){
-			this.network.addLink(new CNLLink(network.getLinks().get(linkId)));
+			if(lanes == null)
+				this.network.addLink(new CNLLink(network.getLinks().get(linkId)));
+			else {
+				this.network.addLink(new CNLLinkToLink(network.getLinks().get(linkId), lanes.getLanesToLinkAssignments().get(linkId)));
+			}
 		}
 		
 	}
 	
 	
-	public Map<Id<Link>, CNLLink> getCNLLinks(){
-		return (Map<Id<Link>,CNLLink>)this.network.getLinks();
-	}
-	
+//	public Map<Id<Link>, CNLLink> getCNLLinks(){
+//		return (Map<Id<Link>,CNLLink>)this.network.getLinks();
+//	}
+//	
 	
 	@Override
 	public CNLNetwork createNetwork(Network network) {
-		CNLNetwork newNetwork=new CNLNetwork(network);
+		CNLNetwork newNetwork=new CNLNetwork(network, null);
 		return newNetwork;
 	}
 
 
 	@Override
 	public void clearLinkVolumesfull() {
-		for(CNLLink link:this.getCNLLinks().values()) {
-			link.clearLinkCarFlow();
-			link.clearTransitPassangerFlow();
+		for(Link link: this.network.getLinks().values()) {
+			((CNLLink) link).clearLinkCarFlow();
+			((CNLLink) link).clearTransitPassangerFlow();
 		}
 	}
 
 	@Override
 	public void clearLinkCarVolumes() {
-		for(CNLLink link:this.getCNLLinks().values()) {
-			link.clearLinkCarFlow();
+		for(Link link: this.network.getLinks().values()) {
+			((CNLLink) link).clearLinkCarFlow();
 		}
 		
 	}
@@ -95,11 +98,6 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 		// TODO Auto-generated method stub
 		
 	}
-
-
-	
-
-
 	
 	/**
 	 * !!!CAUTION!!!
@@ -110,7 +108,7 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 	 */
 	@Override
 	public void overlayTransitVehicles(TransitSchedule ts, Scenario scenario) {
-		
+		throw new IllegalArgumentException("Not implemented!");
 	}
 
 
@@ -121,10 +119,10 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 	 */
 	@Override
 	public void updateGCRatio(SignalFlowReductionGenerator signalGC) {
-		for(CNLLink link:this.getCNLLinks().values()) {
+		for(Link link: this.network.getLinks().values()) {
 			double gcRatio = signalGC.getGCratio(link); //Try
 			if(gcRatio>=0 && gcRatio <=1)
-				link.setGcRatio(gcRatio);
+				((CNLLink) link).setGcRatio(gcRatio);
 			else {
 				throw new RuntimeException("The GC ratio is wrong!");
 			}

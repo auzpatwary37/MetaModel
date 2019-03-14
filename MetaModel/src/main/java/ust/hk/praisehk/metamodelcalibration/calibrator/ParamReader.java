@@ -174,8 +174,10 @@ public class ParamReader {
 		timeBean.put("MorningPeak1", new Tuple<Double,Double>(25200.,28800.));
 		timeBean.put("MorningPeak2", new Tuple<Double,Double>(28800.,32400.));
 		timeBean.put("MorningPeak3", new Tuple<Double,Double>(32400.,36000.));
-		timeBean.put("AfterMorningPeak", new Tuple<Double,Double>(36000.,43200.));
-		timeBean.put("Afternoon", new Tuple<Double,Double>(43200.,57600.));
+		timeBean.put("AfterMorningPeak", new Tuple<Double,Double>(36000.,41400.));
+		timeBean.put("Afternoon", new Tuple<Double,Double>(41400.,45000.));
+		timeBean.put("Afternoon2", new Tuple<Double,Double>(45000.,50400.));
+		timeBean.put("Afternoon3", new Tuple<Double,Double>(50400.,57600.));
 		timeBean.put("EveningPeak1", new Tuple<Double,Double>(57600.,63000.));
 		timeBean.put("EveningPeak2", new Tuple<Double,Double>(63000.,66600.));
 		timeBean.put("EveningPeak3", new Tuple<Double,Double>(66600.,70200.));

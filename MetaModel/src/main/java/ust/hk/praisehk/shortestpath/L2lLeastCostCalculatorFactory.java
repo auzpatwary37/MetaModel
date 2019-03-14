@@ -38,8 +38,8 @@ public class L2lLeastCostCalculatorFactory {
 		Network invertedNetwork = new NetworkInverter(network, allowedInLinkTurnInfoMap).getInvertedNetwork();
 
 		LeastCostPathCalculator routeAlgo = new DijkstraFactory().createPathCalculator(invertedNetwork,
-				new TravelTimesInvertedNetworkProxy(network, l2ltravelTimes),
-				new TravelTimesInvertedNetworkProxy(network, l2ltravelTimes));
+				new TravelTimesInvertedNetworkProxyMetaModel(network, l2ltravelTimes),
+				new TravelTimesInvertedNetworkProxyMetaModel(network, l2ltravelTimes));
 
 		invertedNetworkRouteAlgo = new L2lNetworkLeastCostPathCalculator(network, invertedNetwork, routeAlgo);
 	}
@@ -48,11 +48,11 @@ public class L2lLeastCostCalculatorFactory {
 		return invertedNetworkRouteAlgo;
 	}
 
-	private static class TravelTimesInvertedNetworkProxy implements TravelTime, TravelDisutility {
+	private static class TravelTimesInvertedNetworkProxyMetaModel implements TravelTime, TravelDisutility {
 		private Network network;
 		private LinkToLinkTravelTime linkToLinkTravelTime;
 
-		private TravelTimesInvertedNetworkProxy(Network network, LinkToLinkTravelTime l2ltt) {
+		private TravelTimesInvertedNetworkProxyMetaModel(Network network, LinkToLinkTravelTime l2ltt) {
 			this.linkToLinkTravelTime = l2ltt;
 			this.network = network;
 		}
@@ -65,16 +65,21 @@ public class L2lLeastCostCalculatorFactory {
 		 */
 		@Override
 		public double getLinkTravelTime(Link invLink, double time, Person person, Vehicle vehicle) {
-			Link fromLink = network.getLinks().get(Id.create(invLink.getFromNode().getId(), Link.class));
-			Link toLink = network.getLinks().get(Id.create(invLink.getToNode().getId(), Link.class));
-			return linkToLinkTravelTime.getLinkToLinkTravelTime(fromLink, toLink, time);
+			return 0.1; //To trick the Dijkstra algorithm
+//			Link fromLink = network.getLinks().get(Id.create(invLink.getFromNode().getId(), Link.class));
+//			Link toLink = network.getLinks().get(Id.create(invLink.getToNode().getId(), Link.class));
+//			return linkToLinkTravelTime.getLinkToLinkTravelTime(fromLink, toLink, time);
 		}
 
 		// TODO: Validate the travel disutility
 		@Override
 		public double getLinkTravelDisutility(Link link, double time, Person person, Vehicle vehicle) {
-			// return link.getLength();
-			return this.getLinkTravelTime(link, time, person, vehicle) * 20;
+			
+			//It is actually the linkTolinkTravelTime * 20.
+			Link fromLink = network.getLinks().get(Id.create(link.getFromNode().getId(), Link.class));
+			Link toLink = network.getLinks().get(Id.create(link.getToNode().getId(), Link.class));
+			return linkToLinkTravelTime.getLinkToLinkTravelTime(fromLink, toLink, time) * 20;
+			//return ((MetaModelTravelTimeAndDisutility) linkToLinkTravelTime).getLinkTravelDisutility(link, time, person, vehicle);
 		}
 
 		@Override

@@ -10,6 +10,7 @@ import org.matsim.core.router.util.TravelTime;
 import org.matsim.vehicles.Vehicle;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
+import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModelSubPop;
 
 public class MetaModelTravelTimeAndDisutility implements TravelDisutility, TravelTime, LinkToLinkTravelTime{
 	private static final Logger log = Logger.getLogger(MetaModelTravelTimeAndDisutility.class);
@@ -69,7 +70,10 @@ public class MetaModelTravelTimeAndDisutility implements TravelDisutility, Trave
 	 */
 	@Override
 	public double getLinkToLinkTravelTime(Link fromLink, Link toLink, double time) {
-		return this.getLinkTravelTime(fromLink, time, null, null);
+		if(this.trafficModel instanceof CNLSUEModelSubPop)
+			return ((CNLSUEModelSubPop) this.trafficModel).getAverageLinkToLinkTravelTime(fromLink.getId(), toLink.getId(), time);
+		else
+			return this.getLinkTravelTime(fromLink, time, null, null);
 	}
 	
 }

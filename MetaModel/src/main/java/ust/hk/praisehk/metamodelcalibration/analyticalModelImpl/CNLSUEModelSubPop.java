@@ -18,10 +18,12 @@ import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.network.io.MatsimNetworkReader;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.utils.collections.Tuple;
+import org.matsim.lanes.Lanes;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
+import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpair;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.calibrator.ParamReader;
@@ -38,6 +40,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 
 	private ArrayList<String> subPopulationName=new ArrayList<>();
 	private ParamReader pReader=new ParamReader("input/subPopParamAndLimit.csv");
+	private boolean containLinkToLink = false; //Default as false.
 	
 	public CNLSUEModelSubPop(Map<String, Tuple<Double, Double>> timeBean,ArrayList<String> subPopName) {
 		super(timeBean);
@@ -130,7 +133,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		this.getOdPairs().generateODpairsetSubPop(null, population);//This network has priority over the constructor network. This allows to use a od pair specific network 
 		this.getOdPairs().generateRouteandLinkIncidence(0.);
 		for(String s:this.getTimeBeans().keySet()) {
-			this.networks.put(s, new CNLNetwork(network));
+			this.networks.put(s, new CNLNetwork(network, null));
 			this.performTransitVehicleOverlay(this.networks.get(s),
 					transitSchedule,scenario.getTransitVehicles(),this.getTimeBeans().get(s).getFirst(),
 					this.getTimeBeans().get(s).getSecond());
@@ -169,11 +172,11 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	public void generateRoutesAndODWithoutRoute(Population population,Network network,TransitSchedule transitSchedule,
+	public void generateRoutesAndODWithoutRoute(Population population,Network network, Lanes lanes, TransitSchedule transitSchedule,
 			Scenario scenario,Map<String,FareCalculator> fareCalculator) { //TODO: Check this function
-		//this.lastPopulation = population;
-		//System.out.println("");
-		this.scenario=scenario;
+		
+		if(lanes != null) containLinkToLink = true;
+		this.scenario = scenario;
 		this.odPairs = new CNLODpairs(scenario, this.timeBeans); //Create ODpairs
 		super.originalNetwork=network;
 		
@@ -192,13 +195,12 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		SignalFlowReductionGenerator sg = new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);
 		for(String timeBin:this.timeBeans.keySet()) { ///Create network for each time bin
-			CNLNetwork analyticalNetwork = new CNLNetwork(network);
+			CNLNetwork analyticalNetwork = new CNLNetwork(network, lanes);
 			analyticalNetwork.updateGCRatio(sg);
 			this.networks.put(timeBin, analyticalNetwork);
-			this.performTransitVehicleOverlay(analyticalNetwork,
-					transitSchedule,scenario.getTransitVehicles(),this.timeBeans.get(timeBin).getFirst(),
-					this.timeBeans.get(timeBin).getSecond());
-			this.transitLinks.put(timeBin,this.getOdPairs().getTransitLinks(this.timeBeans,timeBin));
+			this.performTransitVehicleOverlay(analyticalNetwork, transitSchedule, scenario.getTransitVehicles(),
+					this.timeBeans.get(timeBin).getFirst(), this.timeBeans.get(timeBin).getSecond());
+			this.transitLinks.put(timeBin,this.odPairs.getTransitLinks(this.timeBeans,timeBin));
 		}
 		this.generateRoute(); //Generate the very first route
 		this.odPairs.generateRouteandLinkIncidence(0);
@@ -240,7 +242,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	protected HashMap<Id<Link>,Double> networkLoadingCarSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,double counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
+	protected Map<Id<Link>, Map<Id<Link>, Double>> networkLoadingCarSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,double counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
 		String s=this.getOdPairs().getODpairset().get(ODpairId).getSubPopulation();
 		LinkedHashMap<String,Double>newParam=params;
 		if(s!=null) {
@@ -301,9 +303,21 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		}
 	}
 	
-	
-	
-	
+	public double getAverageLinkToLinkTravelTime(Id<Link> fromLinkId, Id<Link> toLinkId, double time) {
+		if(containLinkToLink) {
+			double linkTime = 0.0;
+			for(String s : this.timeBeans.keySet()) {
+				Tuple<Double, Double> times = this.timeBeans.get(s);
+				linkTime = ((CNLLinkToLink)this.networks.get(s).getLinks().get(fromLinkId)).getLinkToLinkTravelTime(toLinkId, times, this.Params, 
+						this.AnalyticalModelInternalParams);
+				if(times.getFirst() < time && time <= times.getSecond())
+					return linkTime;
+			}
+			return linkTime * 1000; //Return the final link time if their time is not found.
+		}else {
+			return getAverageLinkTravelTime(fromLinkId, time);
+		}
+	}
 	
 	@Override
 	public Map<String,Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> noparams,LinkedHashMap<String,Double> anaParams) {

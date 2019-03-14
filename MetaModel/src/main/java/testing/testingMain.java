@@ -65,7 +65,8 @@ public class testingMain {
 		fareCalculator.put("train",new LRFareCalculator("fare/light_rail_fares.csv"));
 		
 		CNLSUEModel anaModel=new CNLSUEModel(config,timeBean);
-		anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getTransitSchedule(), scenario, fareCalculator);
+		anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getLanes(), 
+				scenario.getTransitSchedule(), scenario, fareCalculator);
 		anaModel.generateMATSimRoutes(0.7, 30, 10);
 		anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation(), false);
 		System.out.println("wait!!!!");

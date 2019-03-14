@@ -10,6 +10,8 @@ import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
+import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModel;
+
 /**
  *
  * @author Ashraf
@@ -33,7 +35,8 @@ public abstract class AnalyticalModelLink implements Link{
 	protected double linkCarVolume=0;
 	protected double linkTransitVolume=0;
 	protected double linkTransitPassenger=0;
-	protected double linkTravelTime=0;
+	//protected double linkTravelTime=0;
+	protected double linkCarConstantVolume = 0; //A constant term added to the volume
 	protected double gcRatio=1; //This is the gcRatio of the links.
 	/**
 	 * Constructor
@@ -56,14 +59,15 @@ public abstract class AnalyticalModelLink implements Link{
 	 */
 	
 	public abstract double getLinkTravelTime(Tuple<Double,Double> timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams);
-	public void resetLinkVolume() {
-		this.linkCarVolume=0;
-		this.linkTransitPassenger=0;
-	}
+	
+	//It is probably not used?
+//	public void resetLinkVolume(double linkCarConstant) {
+//		this.linkCarVolume=0;
+//		this.linkTransitPassenger=0;
+//		this.linkCarConstantVolume = linkCarConstant;
+//	}
+	
 	public void addLinkCarVolume(double lVolume) {
-		if(this.link.getId().toString().contains("WHC")) {
-			System.out.print("");
-		}
 		this.linkCarVolume+=lVolume;
 	}
 	public void addLinkTransitPassengerVolume(double lVolume) {
@@ -74,18 +78,17 @@ public abstract class AnalyticalModelLink implements Link{
 		this.linkTransitVolume+=lVolume;
 	}
 	
-	
 	public double getLinkCarVolume() {
 		return linkCarVolume;
 	}
+	
 	public double getLinkAADTVolume() {
-		return linkCarVolume+linkTransitVolume;
+		return linkCarVolume + linkTransitVolume + linkCarConstantVolume;
 	}
 
 	public double getLinkTransitVolume() {
 		return linkTransitVolume;
 	}
-
 
 	public double getLinkTransitPassenger() {
 		return linkTransitPassenger;
@@ -103,9 +106,18 @@ public abstract class AnalyticalModelLink implements Link{
 		return gcRatio;
 	}
 
-
 	public void setGcRatio(double gcRatio) {
+		if(gcRatio<0 || gcRatio>1) {
+			throw new IllegalArgumentException("The g/c ratio should between 0 and 1!");
+		}
 		this.gcRatio = gcRatio;
+	}
+	
+	public void setLinkCarConstantVolume(double linkCarConstantFlow) {
+		if(linkCarConstantFlow<0) {
+			throw new IllegalArgumentException("The link car constant should not be less than 0!");
+		}
+		this.linkCarConstantVolume = linkCarConstantFlow;
 	}
 	
 	public void clearNANFlow() {
@@ -115,6 +127,7 @@ public abstract class AnalyticalModelLink implements Link{
 			this.linkTransitPassenger=0;
 		}
 	}
+	
 	/**
 	 * -----------------------Wrapped Class Functions------------------------------------------------------
 	 */
@@ -135,12 +148,14 @@ public abstract class AnalyticalModelLink implements Link{
 
 	@Override
 	public boolean setFromNode(Node node) {
-		return link.setFromNode(node);
+		throw new IllegalArgumentException("Not proper to modify it!");
+		//return link.setFromNode(node);
 	}
 
 	@Override
 	public boolean setToNode(Node node) {
-		return link.setToNode(node);
+		throw new IllegalArgumentException("Not proper to modify it!");
+		//return link.setToNode(node);
 	}
 
 	@Override
@@ -190,28 +205,32 @@ public abstract class AnalyticalModelLink implements Link{
 
 	@Override
 	public void setFreespeed(double freespeed) {
-		link.setFreespeed(freespeed);
+		throw new IllegalArgumentException("Not proper to modify it!");
+		//link.setFreespeed(freespeed);
 	}
 
 	@Override
 	public void setLength(double length) {
-		link.setLength(length);
-		
+		throw new IllegalArgumentException("Not proper to modify it!");
+		//link.setLength(length);
 	}
 
 	@Override
 	public void setNumberOfLanes(double lanes) {
-		link.setNumberOfLanes(lanes);
+		throw new IllegalArgumentException("Not proper to modify it!");
+		//link.setNumberOfLanes(lanes);
 	}
 
 	@Override
 	public void setCapacity(double capacity) {
-		link.setCapacity(capacity);
+		throw new IllegalArgumentException("Not proper to modify it!");
+		//link.setCapacity(capacity);
 	}
 
 	@Override
 	public void setAllowedModes(Set<String> modes) {
-		link.setAllowedModes(modes);
+		throw new IllegalArgumentException("Not proper to modify it!");
+		//link.setAllowedModes(modes);
 	}
 
 	@Override
@@ -228,8 +247,4 @@ public abstract class AnalyticalModelLink implements Link{
 	public double getFlowCapacityPerSec(double time) {
 		return link.getFlowCapacityPerSec(time);
 	}
-
-
-	
-	
 }

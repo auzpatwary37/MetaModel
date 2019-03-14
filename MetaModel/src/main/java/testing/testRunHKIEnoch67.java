@@ -182,7 +182,7 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 	}
 	//Object a=scenario.getPopulation().getPersonAttributes();
 	CNLSUEModelSubPop anaModel=new CNLSUEModelSubPop(config,ParamReader.getDefaultTimeBean(),subPopNames);
-	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), 
+	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getLanes(), 
 			scenario.getTransitSchedule(), scenario, fareCalculator);
 	anaModel.generateMATSimRoutes(0.7, 2, 10);
 	anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation(), false);

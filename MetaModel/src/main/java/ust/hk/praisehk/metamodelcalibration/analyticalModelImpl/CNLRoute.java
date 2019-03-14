@@ -19,7 +19,7 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelRoute
 public class CNLRoute implements AnalyticalModelRoute{
 
 	private final Id<AnalyticalModelRoute> routeId;
-	private double travelTime=0;
+	//private double travelTime=0;
 	private double distanceTravelled=0;
 	private ArrayList<Id<Link>>links=new ArrayList<>();
 	private double RouteUtility=0;
@@ -47,12 +47,18 @@ public class CNLRoute implements AnalyticalModelRoute{
 	}
 
 	@Override
-	public double getTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,LinkedHashMap<String,Double> params,LinkedHashMap<String,Double>anaParams) {
-		this.travelTime=0;
-		for(Id<Link> lId:this.links) {
-			this.travelTime+=((CNLLink)network.getLinks().get(lId)).getLinkTravelTime(timeBean,params,anaParams);
+	public double getTravelTime(AnalyticalModelNetwork network, Tuple<Double,Double> timeBean, LinkedHashMap<String,Double> params, 
+			LinkedHashMap<String,Double> anaParams) {
+		double travelTime = 0.;
+		for(int i = 0; i < this.links.size(); i++) {
+			Link thisLink = network.getLinks().get(this.links.get(i));
+			if(thisLink instanceof CNLLinkToLink && i < this.links.size() - 1) {
+				travelTime += ((CNLLinkToLink)thisLink).getLinkToLinkTravelTime(this.links.get(i+1), timeBean, params, anaParams);
+			}else {
+				travelTime += ((CNLLink)thisLink).getLinkTravelTime(timeBean,params,anaParams);
+			}
 		}
-		return this.travelTime;
+		return travelTime;
 	}
 	@Override
 	public double getRouteDistance() {
@@ -90,7 +96,7 @@ public class CNLRoute implements AnalyticalModelRoute{
 		
 		this.RouteUtility=ModeConstant+
 				this.getTravelTime(network,timeBean,parmas,anaParmas)*MUTravelTime+
-				(MUDistanceCar+MUMoney*DistanceBasedMoneyCostCar)*this.getRouteDistance();
+				(MUDistanceCar+MUMoney*DistanceBasedMoneyCostCar)*this.distanceTravelled;
 				
  		if(this.RouteUtility==0) {
  			System.out.println("Debug!!!!");
@@ -108,7 +114,6 @@ public class CNLRoute implements AnalyticalModelRoute{
 
 	@Override
 	public String getRouteDescription() {
-		
 		return this.routeId.toString();
 	}
 
