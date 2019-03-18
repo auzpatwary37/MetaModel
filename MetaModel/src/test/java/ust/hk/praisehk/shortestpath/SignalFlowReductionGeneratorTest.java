@@ -23,7 +23,9 @@ class SignalFlowReductionGeneratorTest {
 		SignalFlowReductionGenerator generator = new SignalFlowReductionGenerator(scenario);
 		
 		assertEquals(0.425, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("101736_101537"))), 1e-5);
-		assertEquals(1, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("201138_101561"))), 1e-5);		
+		assertEquals(1, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("201138_101561"))), 1e-5);
+		
+		assertEquals(0.447, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("22528_101476"))), 1e-5);	
 	}
 
 }

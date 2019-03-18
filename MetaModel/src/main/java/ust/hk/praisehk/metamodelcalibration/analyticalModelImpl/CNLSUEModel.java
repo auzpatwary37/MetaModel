@@ -95,8 +95,9 @@ public class CNLSUEModel implements AnalyticalModel{
 	private double gammaMSA=.1;//parameter for decreasing MSA step size
 	
 	//other Parameters for the Calibration Process
-	private double tollerance=0.01;
-	private double tolleranceLink=0.1;
+	private double tolerance = 15;
+	private double toleranceRatio = 0.01;
+	private double toleranceLink = 1;
 	//user input
 
 	protected Map<String, Tuple<Double,Double>> timeBeans;
@@ -104,7 +105,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	//MATSim Input
 	protected Map<String, AnalyticalModelNetwork> networks=new ConcurrentHashMap<>();
 	protected Network originalNetwork;
-	private TransitSchedule ts;
+	protected TransitSchedule ts;
 	protected Scenario scenario;
 	@Deprecated private Population population;
 	protected Map<String,FareCalculator> fareCalculator=new HashMap<>();
@@ -269,25 +270,25 @@ public class CNLSUEModel implements AnalyticalModel{
 		//this.setLastPopulation(population);
 		//System.out.println("");
 		this.odPairs = new CNLODpairs(network, transitSchedule, scenario,this.timeBeans);
-		this.getOdPairs().generateODpairset(population);
-		this.getOdPairs().generateRouteandLinkIncidence(0.);
+		this.odPairs.generateODpairset(population);
+		this.odPairs.generateRouteandLinkIncidence(0.);
 		this.originalNetwork=network;
 		for(String s:this.timeBeans.keySet()) {
 			this.networks.put(s, new CNLNetwork(network, null));
 			this.performTransitVehicleOverlay(this.networks.get(s),
 					transitSchedule,scenario.getTransitVehicles(),this.timeBeans.get(s).getFirst(),
 					this.timeBeans.get(s).getSecond());
-			this.transitLinks.put(s,this.getOdPairs().getTransitLinks(this.timeBeans,s));
+			this.transitLinks.put(s,this.odPairs.getTransitLinks(this.timeBeans,s));
 		}
 		this.fareCalculator=fareCalculator;
 		
 		
 		this.carDemand.size();
 		
-		this.setTs(transitSchedule);
+		this.ts = transitSchedule;
 		for(String timeBeanId:this.timeBeans.keySet()) { //For every time bean
 			this.consecutiveSUEErrorIncrease.put(timeBeanId, 0.);
-			Map<Id<AnalyticalModelODpair>, Double> odDemandMap = this.getOdPairs().getDemand(timeBeanId); //TODO: A little bit strange
+			Map<Id<AnalyticalModelODpair>, Double> odDemandMap = this.odPairs.getDemand(timeBeanId); //TODO: A little bit strange
 			this.originalDemand.put(timeBeanId, new HashMap<>(odDemandMap)); //Add a hashMap for the time bean
 			for(Id<AnalyticalModelODpair> odId : odDemandMap.keySet()) {
 				double totalDemand = odDemandMap.get(odId);
@@ -630,13 +631,13 @@ public class CNLSUEModel implements AnalyticalModel{
 	}
 	
 	
-	public Map<String, FareCalculator> getFareCalculator() {
-		return fareCalculator;
-	}
+//	public Map<String, FareCalculator> getFareCalculator() {
+//		return fareCalculator;
+//	}
 
-	public void setFareCalculator(Map<String, FareCalculator> farecalc) {
-		this.fareCalculator = farecalc;
-	}
+//	public void setFareCalculator(Map<String, FareCalculator> farecalc) {
+//		this.fareCalculator = farecalc;
+//	}
 	public void setMSAAlpha(double alpha) {
 		this.alphaMSA = alpha;
 	}
@@ -644,7 +645,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		this.gammaMSA = gamma;
 	}
 	public void setTollerance(double tollerance) {
-		this.tollerance = tollerance;
+		this.tolerance = tollerance;
 	}
 	/**
 	 * This method resets all the car demand 
@@ -775,7 +776,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * @return
 	 */
 	protected HashMap<Id<TransitLink>,Double> NetworkLoadingTransitSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,int counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
-		List<AnalyticalModelTransitRoute> routes=this.getOdPairs().getODpairset().get(ODpairId).getTrRoutes(this.timeBeans,timeBeanId);
+		List<AnalyticalModelTransitRoute> routes=this.odPairs.getODpairset().get(ODpairId).getTrRoutes(this.timeBeans,timeBeanId);
 		
 		HashMap<Id<AnalyticalModelTransitRoute>,Double> routeFlows=new HashMap<>();
 		HashMap<Id<TransitLink>,Double> linkFlows=new HashMap<>();
@@ -800,7 +801,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			if(u>300) {
 				logger.warn("STOP!!!Utility is too large >300");
 			}
-			this.getOdPairs().getODpairset().get(ODpairId).updateTrRouteUtility(r.getTrRouteId(), u,timeBeanId);
+			this.odPairs.getODpairset().get(ODpairId).updateTrRouteUtility(r.getTrRouteId(), u,timeBeanId);
 			totalUtility+=Math.exp(u);
 		}
 		if(totalUtility==0) {
@@ -808,12 +809,12 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 		for(AnalyticalModelTransitRoute r:routes){
 			double totalDemand=this.demand.get(timeBeanId).get(ODpairId);
-			double carDemand=this.getCarDemand().get(timeBeanId).get(ODpairId);
+			double carDemand=this.carDemand.get(timeBeanId).get(ODpairId);
 			double q=(totalDemand-carDemand);
 			if(q<0) {
 				throw new IllegalArgumentException("Stop!!! transit demand is negative!!!");
 			}
-			double utility=this.getOdPairs().getODpairset().get(ODpairId).getTrRouteUtility(timeBeanId).
+			double utility=this.odPairs.getODpairset().get(ODpairId).getTrRouteUtility(timeBeanId).
 					get(r.getTrRouteId());
 			double flow=q*Math.exp(utility)/totalUtility;
 			if(Double.isNaN(flow)||flow==Double.POSITIVE_INFINITY||flow==Double.NEGATIVE_INFINITY) {
@@ -826,13 +827,13 @@ public class CNLSUEModel implements AnalyticalModel{
 
 		}
 		
-		Set<Id<TransitLink>>linksets=getOdPairs().getODpairset().get(ODpairId).getTrLinkIncidence().keySet();
+		Set<Id<TransitLink>>linksets=odPairs.getODpairset().get(ODpairId).getTrLinkIncidence().keySet();
 		for(Id<TransitLink> linkId:linksets){
 			if(this.transitLinks.get(timeBeanId).containsKey(linkId)) {
 			double linkflow=0;
-			ArrayList<AnalyticalModelTransitRoute>incidence=getOdPairs().getODpairset().get(ODpairId).getTrLinkIncidence().get(linkId);
+			ArrayList<AnalyticalModelTransitRoute>incidence=odPairs.getODpairset().get(ODpairId).getTrLinkIncidence().get(linkId);
 			for(AnalyticalModelTransitRoute r:incidence){
-				ArrayList<AnalyticalModelTransitRoute> routesFromOd=this.getOdPairs().getODpairset().get(ODpairId).getTrRoutes(this.timeBeans,timeBeanId);
+				ArrayList<AnalyticalModelTransitRoute> routesFromOd=this.odPairs.getODpairset().get(ODpairId).getTrRoutes(this.timeBeans,timeBeanId);
 				
 				if(CNLSUEModel.routeContain(routesFromOd, r)) {
 				linkflow+=routeFlows.get(r.getTrRouteId());
@@ -865,8 +866,8 @@ public class CNLSUEModel implements AnalyticalModel{
 	 */
 	protected HashMap<Id<Link>,Double> performCarNetworkLoading(String timeBeanId, double iteration, LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
 		HashMap<Id<Link>,Double> linkVolume=new HashMap<>();
-		for(Id<AnalyticalModelODpair> odpairId:this.getOdPairs().getODpairset().keySet()){
-			if(this.getOdPairs().getODpairset().get(odpairId).getRoutes()!=null && this.getCarDemand().get(timeBeanId).get(odpairId)!=0) {
+		for(Id<AnalyticalModelODpair> odpairId:this.odPairs.getODpairset().keySet()){
+			if(this.odPairs.getODpairset().get(odpairId).getRoutes()!=null && this.carDemand.get(timeBeanId).get(odpairId)!=0) {
 				Map<Id<Link>,Map<Id<Link>,Double>> oDlinkFlowVolume = this.networkLoadingCarSingleOD(odpairId, timeBeanId, iteration, params, anaParams);
 				for(Id<Link> linkId : oDlinkFlowVolume.keySet()){
 					if(linkVolume.containsKey(linkId)){
@@ -888,7 +889,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	protected Map<Id<Link>, Map<Id<Link>,Double>> performLinkToLinkCarNetworkLoading(String timeBeanId, double iteration, LinkedHashMap<String,Double> params, 
 			LinkedHashMap<String, Double> anaParams){
 		Map<Id<Link>, Map<Id<Link>,Double>> linkToLinkVolume=new HashMap<>();
-		for(Id<AnalyticalModelODpair> odpairId:this.getOdPairs().getODpairset().keySet()){
+		for(Id<AnalyticalModelODpair> odpairId:this.odPairs.getODpairset().keySet()){
 			if(this.odPairs.getODpairset().get(odpairId).getRoutes()!=null && this.carDemand.get(timeBeanId).get(odpairId)!=0) {
 				Map<Id<Link>,Map<Id<Link>,Double>> oDlinkFlowVolume = this.networkLoadingCarSingleOD(odpairId, timeBeanId, iteration, params, anaParams);
 				for(Id<Link> fromLinkId : oDlinkFlowVolume.keySet()){
@@ -915,9 +916,9 @@ public class CNLSUEModel implements AnalyticalModel{
 	 */
 	protected HashMap<Id<TransitLink>,Double> performTransitNetworkLoading(String timeBeanId,int counter, LinkedHashMap<String, Double> params, LinkedHashMap<String, Double> anaParams){
 		HashMap<Id<TransitLink>,Double> linkVolume=new HashMap<>();
-		for(Id<AnalyticalModelODpair> odpairId:this.getOdPairs().getODpairset().keySet()){
+		for(Id<AnalyticalModelODpair> odpairId:this.odPairs.getODpairset().keySet()){
 			double totalDemand=this.demand.get(timeBeanId).get(odpairId);
-			double carDemand=this.getCarDemand().get(timeBeanId).get(odpairId);
+			double carDemand=this.carDemand.get(timeBeanId).get(odpairId);
 			if((totalDemand-carDemand)!=0) {
 				HashMap <Id<TransitLink>,Double> ODvolume=this.NetworkLoadingTransitSingleOD(odpairId,timeBeanId,counter,params,anaParams);
 				for(Id<TransitLink> linkId:ODvolume.keySet()){
@@ -989,7 +990,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			//counterPart=1./counter;
 			update=counterPart*(newVolume-oldVolume);
 			if(oldVolume!=0) {
-				if(Math.abs(update)/oldVolume*100>this.tolleranceLink) {
+				if(Math.abs(update)/oldVolume*100>this.toleranceLink) {
 					linkSum+=1;
 				}
 			}
@@ -1006,7 +1007,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			
 			update=counterPart*(newVolume-oldVolume);
 			if(oldVolume!=0) {
-				if(Math.abs(update)/oldVolume*100>this.tolleranceLink) {
+				if(Math.abs(update)/oldVolume*100>this.toleranceLink) {
 					linkSum+=1;
 				}
 				
@@ -1021,7 +1022,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 		error1.get(timeBeanId).add(squareSum);
 		
-		if(squareSum<this.getTollerance()) {
+		if(squareSum<this.tolerance) {
 			return true;
 		}else {
 			return false;
@@ -1034,58 +1035,47 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * @param tollerance
 	 * @return
 	 */
-	protected boolean checkConvergence(HashMap<Id<Link>,Double> linkVolume,HashMap<Id<TransitLink>,Double> transitlinkVolume, double tollerance,String timeBeanId,int counter){
-		
+	protected boolean checkConvergence(HashMap<Id<Link>,Double> linkVolume,HashMap<Id<TransitLink>,Double> transitlinkVolume, String timeBeanId,int counter){
 		double squareSum=0;
-		double sum=0;
-		double error=0;
+		boolean someLinkDeviatedTooMuch = false;
 		for(Id<Link> linkid:linkVolume.keySet()){
-			if(linkVolume.get(linkid)==0) {
-				error=0;
-			}else {
-				double currentVolume=((AnalyticalModelLink) this.networks.get(timeBeanId).getLinks().get(linkid)).getLinkCarVolume();
+			if(linkVolume.get(linkid)!=0){ //We only calculate for links with flow.
+				double currentVolume =((AnalyticalModelLink) this.networks.get(timeBeanId).getLinks().get(linkid)).getLinkCarVolume();
 				double newVolume=linkVolume.get(linkid);
-				error=Math.pow((currentVolume-newVolume),2);
+				double error = Math.pow((currentVolume-newVolume),2);
 				if(error==Double.POSITIVE_INFINITY||error==Double.NEGATIVE_INFINITY) {
 					throw new IllegalArgumentException("Error is infinity!!!");
+				}else if(error==Double.NaN) {
+					throw new IllegalArgumentException("error is NAN!!!! CHECK");
 				}
-				if(error/newVolume*100>tollerance) {					
-					sum+=1;
+				if( error/newVolume > toleranceRatio && Math.abs(currentVolume - newVolume) < toleranceLink) {					
+					someLinkDeviatedTooMuch = false;
 				}
+				squareSum += error;
 			}
-			if(error==Double.NaN){
-				throw new IllegalArgumentException("error is NAN!!!! CHECK");
-			}
-			
-			squareSum+=error;
-			if(squareSum==Double.POSITIVE_INFINITY||squareSum==Double.NEGATIVE_INFINITY) {
-				throw new IllegalArgumentException("error is infinity!!!");
-			}
+//			if(squareSum==Double.POSITIVE_INFINITY || squareSum==Double.NEGATIVE_INFINITY) {
+//				throw new IllegalArgumentException("error is infinity!!!");
+//			}
 		}
 		for(Id<TransitLink> transitlinkid:transitlinkVolume.keySet()){
-			if(transitlinkVolume.get(transitlinkid)==0) {
-				error=0;
-			}else {
-				double currentVolume=this.transitLinks.get(timeBeanId).get(transitlinkid).getPassangerCount();
+			if(transitlinkVolume.get(transitlinkid)!=0) { //We only calculate for links with flow.
+				double currentVolume = this.transitLinks.get(timeBeanId).get(transitlinkid).getPassangerCount();
 				double newVolume=transitlinkVolume.get(transitlinkid);
-				error=Math.pow((currentVolume-newVolume),2);
-				if(error/newVolume*100>tollerance) {
-
-					sum+=1;
+				double error = Math.pow((currentVolume-newVolume),2);
+				if(error==Double.NaN||error==Double.NEGATIVE_INFINITY) {
+					throw new IllegalArgumentException("Stop!!! There is something wrong!!!");
 				}
+				if( error/newVolume > toleranceRatio && Math.abs(currentVolume - newVolume) < toleranceLink) {
+					someLinkDeviatedTooMuch = false;
+				}
+				squareSum += error;
 			}
-			if(error==Double.NaN||error==Double.NEGATIVE_INFINITY) {
-				throw new IllegalArgumentException("Stop!!! There is something wrong!!!");
-			}
-			squareSum+=error;
 		}
-		if(squareSum==Double.NaN) {
-			System.out.println("WAIT!!!!Problem!!!!!");
-		}
-		squareSum=Math.sqrt(squareSum);
+		
 		if(counter==1) {
 			this.error.get(timeBeanId).clear();
 		}
+		squareSum = Math.sqrt(squareSum);
 		this.error.get(timeBeanId).add(squareSum);
 		logger.info("ERROR amount for "+timeBeanId+" = "+squareSum);
 		//System.out.println("in timeBean Id "+timeBeanId+" No of link not converged = "+sum);
@@ -1097,7 +1087,7 @@ public class CNLSUEModel implements AnalyticalModel{
 //			e.printStackTrace();
 //		}
 		
-		if (squareSum<=this.getTollerance()||sum==0){
+		if (squareSum <= this.tolerance || someLinkDeviatedTooMuch){
 			return true;
 		}else{
 			return false;
@@ -1112,7 +1102,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	 */
 	protected void performModalSplit(LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams,String timeBeanId) {
 		double modeMiu=anaParams.get(CNLSUEModel.ModeMiuName);
-		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()){
+		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()){
 			double demand=this.demand.get(timeBeanId).get(odPair.getODpairId());
 			if(demand!=0) { 
 				double carUtility=odPair.getExpectedMaximumCarUtility(params, anaParams, timeBeanId);
@@ -1120,13 +1110,13 @@ public class CNLSUEModel implements AnalyticalModel{
 				
 				if(carUtility==Double.NEGATIVE_INFINITY||transitUtility==Double.POSITIVE_INFINITY||
 						Math.exp(transitUtility*modeMiu)==Double.POSITIVE_INFINITY) {
-					this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(), 0.0);
+					this.carDemand.get(timeBeanId).put(odPair.getODpairId(), 0.0);
 					
 				}else if(transitUtility==Double.NEGATIVE_INFINITY||carUtility==Double.POSITIVE_INFINITY
 						||Math.exp(carUtility*modeMiu)==Double.POSITIVE_INFINITY) {
-					this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(), this.demand.get(timeBeanId).get(odPair.getODpairId()));
+					this.carDemand.get(timeBeanId).put(odPair.getODpairId(), this.demand.get(timeBeanId).get(odPair.getODpairId()));
 				}else if(carUtility==Double.NEGATIVE_INFINITY && transitUtility==Double.NEGATIVE_INFINITY){
-					this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(), 0.);
+					this.carDemand.get(timeBeanId).put(odPair.getODpairId(), 0.);
 				}else {
 					double carProportion=Math.exp(carUtility*modeMiu)/(Math.exp(carUtility*modeMiu)+Math.exp(transitUtility*modeMiu));
 					//System.out.println("Car Proportion = "+carProportion);
@@ -1135,7 +1125,7 @@ public class CNLSUEModel implements AnalyticalModel{
 						logger.error("Car Demand is invalid");
 						throw new IllegalArgumentException("car demand is invalid");
 					}
-					this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),cardemand);
+					this.carDemand.get(timeBeanId).put(odPair.getODpairId(),cardemand);
 				}
 			}
 		}
@@ -1155,7 +1145,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			throw new IllegalArgumentException("default pt mode ratio cannot be larger than 100");
 		}
 		
-		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()){
+		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()){
 			double demand=this.demand.get(timeBeanId).get(odPair.getODpairId());
 			if(demand!=0) {
 				//double carUtility=odPair.getExpectedMaximumCarUtility(params, anaParams, timeBeanId);
@@ -1250,11 +1240,11 @@ public class CNLSUEModel implements AnalyticalModel{
 			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
 			HashMap<Id<Link>,Double> linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams); //Load the car network, and calculate utilities if it is not first iteration
 			HashMap<Id<TransitLink>, Double> linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params,anaParams);
-			shouldStop=this.checkConvergence(linkCarVolume, linkTransitVolume, this.getTollerance(), timeBeanId,i);
+			shouldStop=this.checkConvergence(linkCarVolume, linkTransitVolume, timeBeanId,i);
 			this.updateLinkVolume(linkCarVolume, linkTransitVolume, i, timeBeanId);
 			if(i==1 && shouldStop==true) {
 				boolean demandEmpty=true;
-				for(AnalyticalModelODpair od:this.getOdPairs().getODpairset().values()) {
+				for(AnalyticalModelODpair od:this.odPairs.getODpairset().values()) {
 					if(od.getDemand().get(timeBeanId)!=0) {
 						demandEmpty=false;
 						break;
@@ -1289,13 +1279,13 @@ public class CNLSUEModel implements AnalyticalModel{
 			
 			Map<Id<Link>, Map<Id<Link>, Double>> linkToLinkCarVolume = this.performLinkToLinkCarNetworkLoading(timeBeanId,i,params,anaParams);
 			linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params,anaParams);
-			shouldStop = this.checkConvergence(convertl2lToLink(linkToLinkCarVolume), linkTransitVolume, this.getTollerance(), timeBeanId,i);
+			shouldStop = this.checkConvergence(convertl2lToLink(linkToLinkCarVolume), linkTransitVolume, timeBeanId,i);
 			this.updateLinkToLinkVolume(linkToLinkCarVolume, linkTransitVolume, i, timeBeanId);
 			//for(this.car)
 			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
 			if(i==1 && shouldStop==true) {
 				boolean demandEmpty=true;
-				for(AnalyticalModelODpair od:this.getOdPairs().getODpairset().values()) {
+				for(AnalyticalModelODpair od:this.odPairs.getODpairset().values()) {
 					if(od.getDemand().get(timeBeanId)!=0) {
 						demandEmpty=false;
 						break;
@@ -1328,7 +1318,7 @@ public class CNLSUEModel implements AnalyticalModel{
 				//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
 				linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams);
 				linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params,anaParams);
-				shouldStop=this.checkConvergence(linkCarVolume, linkTransitVolume, this.tolleranceLink, timeBeanId,i);
+				shouldStop=this.checkConvergence(linkCarVolume, linkTransitVolume, timeBeanId,i);
 				this.updateLinkVolume(linkCarVolume, linkTransitVolume, i, timeBeanId);
 				if(shouldStop) {break;}
 				//this.performModalSplit(params, anaParams, timeBeanId);
@@ -1349,7 +1339,7 @@ public class CNLSUEModel implements AnalyticalModel{
 				//for(this.car)
 				//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
 				linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams);
-				this.checkConvergence(linkCarVolume, linkTransitVolume, this.getTollerance(), timeBeanId,i);
+				this.checkConvergence(linkCarVolume, linkTransitVolume, timeBeanId,i);
 				shouldStop=this.updateLinkVolume(linkCarVolume, linkTransitVolume, i, timeBeanId);
 				
 				if(shouldStop) {
@@ -1360,7 +1350,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			}
 			for(int i=1;i<1;i++) {
 				linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params,anaParams);
-				shouldStop=this.checkConvergence(linkCarVolume, linkTransitVolume, this.getTollerance(), timeBeanId,i);
+				shouldStop=this.checkConvergence(linkCarVolume, linkTransitVolume, timeBeanId,i);
 				this.updateLinkVolume(linkCarVolume, linkTransitVolume, i, timeBeanId);
 				if(shouldStop) {break;}
 			}
@@ -1383,9 +1373,9 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 	}
 
-	public LinkedHashMap<String, Double> getParams() {
-		return Params;
-	}
+//	public LinkedHashMap<String, Double> getParams() {
+//		return Params;
+//	}
 
 	public LinkedHashMap<String, Double> getAnalyticalModelInternalParams() {
 		return AnalyticalModelInternalParams;
@@ -1420,13 +1410,13 @@ public class CNLSUEModel implements AnalyticalModel{
 		this.lastPopulation = lastPopulation;
 	}
 
-	public AnalyticalModelODpairs getOdPairs() {
-		return odPairs;
-	}
+//	public AnalyticalModelODpairs getOdPairs() {
+//		return odPairs;
+//	}
 
-	public Map <String,AnalyticalModelNetwork> getNetworks() {
-		return networks;
-	}
+//	public Map <String,AnalyticalModelNetwork> getNetworks() {
+//		return networks;
+//	}
 
 	
 	@Deprecated
@@ -1434,15 +1424,13 @@ public class CNLSUEModel implements AnalyticalModel{
 		return transitLinks;
 	}
 
+//	public TransitSchedule getTs() {
+//		return ts;
+//	}
 
-
-	public TransitSchedule getTs() {
-		return ts;
-	}
-
-	public void setTs(TransitSchedule ts) {
-		this.ts = ts;
-	}
+//	public void setTs(TransitSchedule ts) {
+//		this.ts = ts;
+//	}
 
 //	public Map<String,Double> getConsecutiveSUEErrorIncrease() {
 //		return consecutiveSUEErrorIncrease;
@@ -1452,13 +1440,9 @@ public class CNLSUEModel implements AnalyticalModel{
 //		return demand;
 //	}
 
-	public Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> getCarDemand() {
-		return carDemand;
-	}
-
-	public double getTollerance() {
-		return tollerance;
-	}
+//	public Map<String,HashMap<Id<AnalyticalModelODpair>,Double>> getCarDemand() {
+//		return carDemand;
+//	}
 
 	@Override
 	public double getLinkTravelTime(Id<Link> linkId, double time) {

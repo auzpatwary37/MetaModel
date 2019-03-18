@@ -62,7 +62,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		this.defaultParameterInitiation(config);
 		for(String timeBeanId:timeBean.keySet()) {
 			this.demand.put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
-			this.getCarDemand().put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
+			this.carDemand.put(timeBeanId, new HashMap<Id<AnalyticalModelODpair>, Double>());
 			this.transitLinks.put(timeBeanId, new HashMap<Id<TransitLink>, TransitLink>());
 			super.beta.put(timeBeanId, new ArrayList<Double>());
 			this.error.put(timeBeanId, new ArrayList<Double>());
@@ -130,25 +130,25 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		Config odConfig=ConfigUtils.createConfig();
 		odConfig.network().setInputFile("data/odNetwork.xml");
 		Network odNetwork=ScenarioUtils.loadScenario(odConfig).getNetwork();
-		this.getOdPairs().generateODpairsetSubPop(null, population);//This network has priority over the constructor network. This allows to use a od pair specific network 
-		this.getOdPairs().generateRouteandLinkIncidence(0.);
+		this.odPairs.generateODpairsetSubPop(null, population);//This network has priority over the constructor network. This allows to use a od pair specific network 
+		this.odPairs.generateRouteandLinkIncidence(0.);
 		for(String s:this.getTimeBeans().keySet()) {
 			this.networks.put(s, new CNLNetwork(network, null));
 			this.performTransitVehicleOverlay(this.networks.get(s),
 					transitSchedule,scenario.getTransitVehicles(),this.getTimeBeans().get(s).getFirst(),
 					this.getTimeBeans().get(s).getSecond());
-			this.transitLinks.put(s,this.getOdPairs().getTransitLinks(this.getTimeBeans(),s));
+			this.transitLinks.put(s,this.odPairs.getTransitLinks(this.getTimeBeans(),s));
 		}
-		this.setFareCalculator(fareCalculator);
+		this.fareCalculator = fareCalculator;
 		
-		this.setTs(transitSchedule);
+		this.ts = transitSchedule;
 		for(String timeBeanId:this.getTimeBeans().keySet()) {
 			this.consecutiveSUEErrorIncrease.put(timeBeanId, 0.);
-			this.originalDemand.put(timeBeanId, new HashMap<>(this.getOdPairs().getDemand(timeBeanId)));
+			this.originalDemand.put(timeBeanId, new HashMap<>(this.odPairs.getDemand(timeBeanId)));
 			for(Id<AnalyticalModelODpair> odId:this.originalDemand.get(timeBeanId).keySet()) {
 				double totalDemand=this.originalDemand.get(timeBeanId).get(odId);
 				this.carDemand.get(timeBeanId).put(odId, 0.5*totalDemand);
-				if(this.getOdPairs().getODpairset().get(odId).getSubPopulation().contains("GV")) {
+				if(this.odPairs.getODpairset().get(odId).getSubPopulation().contains("GV")) {
 					this.carDemand.get(timeBeanId).put(odId, totalDemand); //Load all demand to car for GV
 				}
 				//System.out.println();
@@ -206,7 +206,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		this.odPairs.generateRouteandLinkIncidence(0);
 		this.fareCalculator=fareCalculator;
 		
-		this.setTs(transitSchedule);
+		this.ts = transitSchedule;
 		for(String timeBeanId:this.timeBeans.keySet()) {
 			this.consecutiveSUEErrorIncrease.put(timeBeanId, 0.);
 			this.originalDemand.put(timeBeanId, new HashMap<>( this.odPairs.getDemand(timeBeanId) ));
@@ -243,7 +243,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	
 	@Override
 	protected Map<Id<Link>, Map<Id<Link>, Double>> networkLoadingCarSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,double counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
-		String s=this.getOdPairs().getODpairset().get(ODpairId).getSubPopulation();
+		String s=this.odPairs.getODpairset().get(ODpairId).getSubPopulation();
 		LinkedHashMap<String,Double>newParam=params;
 		if(s!=null) {
 			newParam=this.generateSubPopSpecificParam(params, s);
@@ -253,7 +253,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	
 	@Override
 	protected HashMap<Id<TransitLink>,Double> NetworkLoadingTransitSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,int counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
-		String s=this.getOdPairs().getODpairset().get(ODpairId).getSubPopulation();
+		String s=this.odPairs.getODpairset().get(ODpairId).getSubPopulation();
 		LinkedHashMap<String,Double>newParam=params;
 		if(s!=null) {
 			newParam=this.generateSubPopSpecificParam(params, s);
@@ -263,17 +263,17 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	
 	@Override
 	protected void performModalSplit(LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams,String timeBeanId) {
-		for(AnalyticalModelODpair odPair:this.getOdPairs().getODpairset().values()){
+		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()){
 			
 			//For GV car proportion is always 1
 			if(odPair.getSubPopulation().contains("GV")) {
 				double carDemand=this.demand.get(timeBeanId).get(odPair.getODpairId());
-				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),carDemand);
+				this.carDemand.get(timeBeanId).put(odPair.getODpairId(),carDemand);
 				continue;
 			// if a phantom trip, car and pt proportion is decided from the simulation and will not be changed
 			}else if(odPair.getSubPopulation().contains("trip")) {
 				double carDemand=this.demand.get(timeBeanId).get(odPair.getODpairId())*odPair.getCarModalSplit();
-				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),carDemand);
+				this.carDemand.get(timeBeanId).put(odPair.getODpairId(),carDemand);
 				continue;
 			}
 			double demand=this.demand.get(timeBeanId).get(odPair.getODpairId());
@@ -283,13 +283,13 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 			
 			if(carUtility==Double.NEGATIVE_INFINITY||transitUtility==Double.POSITIVE_INFINITY||
 					Math.exp(transitUtility*anaParams.get("ModeMiu"))==Double.POSITIVE_INFINITY) {
-				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(), 0.0);
+				this.carDemand.get(timeBeanId).put(odPair.getODpairId(), 0.0);
 				
 			}else if(transitUtility==Double.NEGATIVE_INFINITY||carUtility==Double.POSITIVE_INFINITY
 					||Math.exp(carUtility*anaParams.get("ModeMiu"))==Double.POSITIVE_INFINITY) {
-				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(), this.demand.get(timeBeanId).get(odPair.getODpairId()));
+				this.carDemand.get(timeBeanId).put(odPair.getODpairId(), this.demand.get(timeBeanId).get(odPair.getODpairId()));
 			}else if(carUtility==Double.NEGATIVE_INFINITY && transitUtility==Double.NEGATIVE_INFINITY){
-				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(), 0.);
+				this.carDemand.get(timeBeanId).put(odPair.getODpairId(), 0.);
 			}else {
 				double carProportion=Math.exp(carUtility*anaParams.get("ModeMiu"))/(Math.exp(carUtility*anaParams.get("ModeMiu"))+Math.exp(transitUtility*anaParams.get("ModeMiu")));
 				//System.out.println("Car Proportion = "+carProportion);
@@ -297,7 +297,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 				if(cardemand==Double.NaN||cardemand==Double.POSITIVE_INFINITY||cardemand==Double.NEGATIVE_INFINITY) {
 					throw new IllegalArgumentException("car demand is invalid");
 				}
-				this.getCarDemand().get(timeBeanId).put(odPair.getODpairId(),cardemand);
+				this.carDemand.get(timeBeanId).put(odPair.getODpairId(),cardemand);
 			}
 		}
 		}

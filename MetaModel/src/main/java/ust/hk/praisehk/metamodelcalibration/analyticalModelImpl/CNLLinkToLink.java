@@ -50,6 +50,9 @@ public class CNLLinkToLink extends CNLLink {
 	}
 	
 	public double getMaximumToLinkFlowCapacity(Id<Link> toLinkId, Tuple<Double,Double> timeBean, LinkedHashMap<String,Double> params) {
+		if(toLinkId.toString().contains("101476_101477")) {
+			return toLinkCapacity.get(toLinkId)*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName) * 0.1;
+		}
 		return toLinkCapacity.get(toLinkId)*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName)*this.gcRatio;
 	}
 	
