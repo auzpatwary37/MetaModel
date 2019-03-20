@@ -30,7 +30,7 @@ public class SignalFlowReductionGenerator {
 	
 	public double getGCratio(Link link, Id<Link> toLinkId) {
 		Set<Id<Lane>> laneIds = Sets.newHashSet();
-		if(toLinkId != null ) {
+		if(toLinkId != null && scenario.getLanes().getLanesToLinkAssignments().get(link.getId())!=null) {
 			for(Lane lane: scenario.getLanes().getLanesToLinkAssignments().get(link.getId()).getLanes().values()) {
 				if(lane.getToLinkIds()!=null && lane.getToLinkIds().contains(toLinkId)) {
 					laneIds.add(lane.getId());
@@ -51,7 +51,8 @@ public class SignalFlowReductionGenerator {
 		}else {
 			double cycleTime = 0.0;
 			for(SignalData signalData: ssd.getSignalData().values()) { //Work for every signal
-				if(signalData.getLinkId().equals(link.getId()) && (toLinkId==null || !Sets.intersection(laneIds, signalData.getLaneIds()).isEmpty())) {					
+				if(signalData.getLinkId().equals(link.getId()) && (toLinkId==null || laneIds.isEmpty() || //Must be the same link
+						!Sets.intersection(laneIds, signalData.getLaneIds()).isEmpty())) { //If we check for lane, then it must contain the lane also, if there are.
 					//Step 1: Find the signal group Id
 					Id<SignalGroup> signalGroupDataId = null;
 					for(SignalGroupData sg: signalsGroupsData.getSignalGroupDataBySystemId( ssd.getId() ).values() ) {
