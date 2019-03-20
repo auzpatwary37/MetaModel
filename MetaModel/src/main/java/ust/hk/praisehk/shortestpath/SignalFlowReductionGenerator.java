@@ -1,5 +1,7 @@
 package ust.hk.praisehk.shortestpath;
 
+import java.util.Set;
+
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
@@ -15,6 +17,9 @@ import org.matsim.contrib.signals.data.signalsystems.v20.SignalSystemsData;
 import org.matsim.contrib.signals.model.SignalGroup;
 import org.matsim.contrib.signals.model.SignalPlan;
 import org.matsim.contrib.signals.model.SignalSystem;
+import org.matsim.lanes.Lane;
+
+import com.google.common.collect.Sets;
 
 public class SignalFlowReductionGenerator {
 	private final Scenario scenario;
@@ -23,7 +28,16 @@ public class SignalFlowReductionGenerator {
 		this.scenario = scenario;
 	}
 	
-	public double getGCratio(Link link) {
+	public double getGCratio(Link link, Id<Link> toLinkId) {
+		Set<Id<Lane>> laneIds = Sets.newHashSet();
+		if(toLinkId != null ) {
+			for(Lane lane: scenario.getLanes().getLanesToLinkAssignments().get(link.getId()).getLanes().values()) {
+				if(lane.getToLinkIds()!=null && lane.getToLinkIds().contains(toLinkId)) {
+					laneIds.add(lane.getId());
+				}
+			}
+		}
+		
 		SignalsData sd = (SignalsData) scenario.getScenarioElement("signalsData");
 		SignalControlData signalControlData = sd.getSignalControlData();
 		SignalGroupsData signalsGroupsData = sd.getSignalGroupsData();
@@ -37,7 +51,7 @@ public class SignalFlowReductionGenerator {
 		}else {
 			double cycleTime = 0.0;
 			for(SignalData signalData: ssd.getSignalData().values()) { //Work for every signal
-				if(signalData.getLinkId().equals(link.getId())) {					
+				if(signalData.getLinkId().equals(link.getId()) && (toLinkId==null || !Sets.intersection(laneIds, signalData.getLaneIds()).isEmpty())) {					
 					//Step 1: Find the signal group Id
 					Id<SignalGroup> signalGroupDataId = null;
 					for(SignalGroupData sg: signalsGroupsData.getSignalGroupDataBySystemId( ssd.getId() ).values() ) {

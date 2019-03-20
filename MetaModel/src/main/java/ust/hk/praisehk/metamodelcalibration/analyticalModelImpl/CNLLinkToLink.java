@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
@@ -17,7 +18,7 @@ public class CNLLinkToLink extends CNLLink {
 	private Map<Id<Link>, Double> toLinkCarVolume = new HashMap<>();
 	private Map<Id<Link>, Double> toLinkTransitVolume = new HashMap<>(); 
 	private Map<Id<Link>, Double> toLinkCarConstantVolume = new HashMap<>(); //A constant term added to the volume
-	//private Map<Id<Link>, Double> toLinkGcRatio = new HashMap<>();
+	private Map<Id<Link>, Double> toLinkGcRatio = new HashMap<>();
 	
 	private final Map<Id<Link>, Double> toLinkCapacity; //We are lenient here.
 
@@ -44,16 +45,18 @@ public class CNLLinkToLink extends CNLLink {
 		toLinkCapacity = Collections.unmodifiableMap(toLinkCapacityMap); //Make it unmodifiable to prevent accidents
 	}
 	
+	public Set<Id<Link>> getToLinks(){
+		return toLinkCapacity.keySet();
+	}
+	
 	public void addLinkToLinkTransitVolume(Id<Link> toLinkId, double pcuVolume) {
 		double currValue = getLinkTransitVolume(toLinkId);
 		this.toLinkTransitVolume.put(toLinkId, currValue + pcuVolume);
 	}
 	
 	public double getMaximumToLinkFlowCapacity(Id<Link> toLinkId, Tuple<Double,Double> timeBean, LinkedHashMap<String,Double> params) {
-		if(toLinkId.toString().contains("101476_101477")) {
-			return toLinkCapacity.get(toLinkId)*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName) * 0.1;
-		}
-		return toLinkCapacity.get(toLinkId)*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName)*this.gcRatio;
+		return toLinkCapacity.get(toLinkId)*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName) 
+				* this.toLinkGcRatio.get(toLinkId);
 	}
 	
 	public double getLinkCarVolume(Id<Link> toLinkId) {
@@ -86,6 +89,10 @@ public class CNLLinkToLink extends CNLLink {
 		}else {
 			toLinkCarVolume.put(toLinkId, volume);
 		}
+	}
+	
+	public void setToLinkGCRatio(Id<Link> toLinkId, double ratio) {
+		toLinkGcRatio.put(toLinkId, ratio);
 	}
 
 	@Override

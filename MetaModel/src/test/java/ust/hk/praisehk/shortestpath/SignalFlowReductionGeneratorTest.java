@@ -1,7 +1,6 @@
 package ust.hk.praisehk.shortestpath;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 import org.matsim.api.core.v01.Id;
@@ -22,10 +21,11 @@ class SignalFlowReductionGeneratorTest {
 		scenario.addScenarioElement(SignalsData.ELEMENT_NAME, new SignalsDataLoader(config).loadSignalsData());
 		SignalFlowReductionGenerator generator = new SignalFlowReductionGenerator(scenario);
 		
-		assertEquals(0.425, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("101736_101537"))), 1e-5);
-		assertEquals(1, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("201138_101561"))), 1e-5);
+		assertEquals(0.425, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("101736_101537")), null), 1e-5);
+		assertEquals(1, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("201138_101561")), null), 1e-5);
 		
-		assertEquals(0.447, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("22528_101476"))), 1e-5);	
+		assertEquals(0.44711538, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("22528_101476")), null), 1e-5);	
+		assertEquals(0.163461538, generator.getGCratio(scenario.getNetwork().getLinks().get(Id.createLinkId("22528_101476")), Id.createLinkId("101476_101477")), 1e-5);
 	}
 
 }

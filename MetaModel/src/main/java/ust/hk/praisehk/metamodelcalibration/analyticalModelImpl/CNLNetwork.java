@@ -21,6 +21,8 @@ import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
  *
  */
 public class CNLNetwork extends AnalyticalModelNetwork{
+	
+	boolean considerLinkToLink = false;
 	/**
 	 * constructor same as SUE Network
 	 */
@@ -34,6 +36,7 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 				this.network.addLink(new CNLLink(network.getLinks().get(linkId)));
 			else {
 				this.network.addLink(new CNLLinkToLink(network.getLinks().get(linkId), lanes.getLanesToLinkAssignments().get(linkId)));
+				considerLinkToLink = true;
 			}
 		}
 		
@@ -120,11 +123,23 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 	@Override
 	public void updateGCRatio(SignalFlowReductionGenerator signalGC) {
 		for(Link link: this.network.getLinks().values()) {
-			double gcRatio = signalGC.getGCratio(link); //Try
+			double gcRatio = signalGC.getGCratio(link, null); //Try
 			if(gcRatio>=0 && gcRatio <=1)
 				((CNLLink) link).setGcRatio(gcRatio);
 			else {
 				throw new RuntimeException("The GC ratio is wrong!");
+			}
+		}
+		if(considerLinkToLink) {
+			for(Link link: this.network.getLinks().values()) {
+				for(Id<Link> toLinkId: ((CNLLinkToLink) link).getToLinks()) {
+					double gcRatio = signalGC.getGCratio(link, toLinkId);
+					if(gcRatio>=0 && gcRatio <=1)
+						((CNLLinkToLink) link).setToLinkGCRatio(toLinkId, gcRatio);
+					else {
+						throw new RuntimeException("The GC ratio is wrong!");
+					}
+				}
 			}
 		}
 	}
