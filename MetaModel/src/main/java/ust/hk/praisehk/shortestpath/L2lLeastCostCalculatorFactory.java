@@ -74,12 +74,16 @@ public class L2lLeastCostCalculatorFactory {
 		// TODO: Validate the travel disutility
 		@Override
 		public double getLinkTravelDisutility(Link link, double time, Person person, Vehicle vehicle) {
-			
 			//It is actually the linkTolinkTravelTime * 20.
 			Link fromLink = network.getLinks().get(Id.create(link.getFromNode().getId(), Link.class));
 			Link toLink = network.getLinks().get(Id.create(link.getToNode().getId(), Link.class));
-			return linkToLinkTravelTime.getLinkToLinkTravelTime(fromLink, toLink, time) * 20;
-			//return ((MetaModelTravelTimeAndDisutility) linkToLinkTravelTime).getLinkTravelDisutility(link, time, person, vehicle);
+			double disutility = linkToLinkTravelTime.getLinkToLinkTravelTime(fromLink, toLink, time) * 20;
+			if(disutility <= 0) {
+				throw new RuntimeException("The disutility must be positive!");
+			}else if(disutility > 1e15) {
+				throw new RuntimeException("The disutility is too large! Check!");
+			}
+			return disutility;
 		}
 
 		@Override

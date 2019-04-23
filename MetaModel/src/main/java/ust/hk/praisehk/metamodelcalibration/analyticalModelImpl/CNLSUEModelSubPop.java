@@ -19,14 +19,18 @@ import org.matsim.core.network.io.MatsimNetworkReader;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.lanes.Lanes;
+import org.matsim.pt.router.TransitRouterConfig;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
+import dynamicTransitRouter.transfer.TransferDiscountCalculator;
+import transitCalculatorsWithFare.FareTransitRouterConfig;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpair;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.calibrator.ParamReader;
+import ust.hk.praisehk.metamodelcalibration.transit.TransitNetworkHR;
 import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
 
 
@@ -122,7 +126,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	
 	@Override
 	public void generateRoutesAndOD(Population population,Network network,TransitSchedule transitSchedule,
-			Scenario scenario,Map<String,FareCalculator> fareCalculator) {
+			Scenario scenario, Map<String,FareCalculator> fareCalculator) {
 		this.lastPopulation = population;
 		//System.out.println("");
 		super.originalNetwork=network;
@@ -171,16 +175,22 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		return specificParam;
 	}
 	
+	/**
+	 * This function is a key function to generate the networks for the route creations.
+	 */
 	@Override
 	public void generateRoutesAndODWithoutRoute(Population population,Network network, Lanes lanes, TransitSchedule transitSchedule,
-			Scenario scenario,Map<String,FareCalculator> fareCalculator) { //TODO: Check this function
+			Scenario scenario, Map<String,FareCalculator> fareCalculator, TransferDiscountCalculator tdc, 
+			double transitRatio, boolean carOnly) {
 		
 		if(lanes != null) containLinkToLink = true;
 		this.scenario = scenario;
 		this.odPairs = new CNLODpairs(scenario, this.timeBeans); //Create ODpairs
 		super.originalNetwork=network;
 		
-		boolean carOnly = true; //TODO: Remove this parameter to include the whole transit.
+		this.transitConfig = new FareTransitRouterConfig(scenario.getConfig().planCalcScore(),
+				scenario.getConfig().plansCalcRoute(), scenario.getConfig().transitRouter(),
+				scenario.getConfig().vspExperimental()); //transit config
 		//trial
 		Network net = NetworkUtils.createNetwork();
 		new MatsimNetworkReader(net).readFile("data/odNetTPUSB.xml");
@@ -198,13 +208,19 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 			CNLNetwork analyticalNetwork = new CNLNetwork(network, lanes);
 			analyticalNetwork.updateGCRatio(sg);
 			this.networks.put(timeBin, analyticalNetwork);
+			TransitNetworkHR transitNetwork = TransitNetworkHR.createFromSchedule(scenario.getNetwork(), 
+					scenario.getTransitSchedule(), scenario.getTransitVehicles(), 
+					this.transitConfig.getBeelineWalkConnectionDistance(), this.timeBeans.get(timeBin));
+			this.transitNetworks.put(timeBin, transitNetwork);
+			this.transitLinks.put(timeBin, transitNetwork.getTransitLinkMap());
 			this.performTransitVehicleOverlay(analyticalNetwork, transitSchedule, scenario.getTransitVehicles(),
 					this.timeBeans.get(timeBin).getFirst(), this.timeBeans.get(timeBin).getSecond());
-			this.transitLinks.put(timeBin,this.odPairs.getTransitLinks(this.timeBeans,timeBin));
+			//this.transitLinks.put(timeBin,this.odPairs.getTransitLinks(this.timeBeans,timeBin));
 		}
+		this.fareCalculator = fareCalculator;
+		this.tdc = tdc;
 		this.generateRoute(); //Generate the very first route
 		this.odPairs.generateRouteandLinkIncidence(0);
-		this.fareCalculator=fareCalculator;
 		
 		this.ts = transitSchedule;
 		for(String timeBeanId:this.timeBeans.keySet()) {
@@ -218,9 +234,10 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 //				}
 				if(odPair.getSubPopulation().contains("GV") ||  //If it is GV subpopulation
 						odPair.getTrRoutes()==null || odPair.getTrRoutes().isEmpty()) { //If there are no transit routes
-					this.carDemand.get(timeBeanId).put(odId, totalDemand); //TODO: Put all demand to car?!
-				}else 
-					this.carDemand.get(timeBeanId).put(odId, 0.5*totalDemand); //Still put 0.5 if there are transit route
+					this.carDemand.get(timeBeanId).put(odId, totalDemand); //Put all demand to car as it is all car.
+				}else {
+					this.carDemand.get(timeBeanId).put(odId, (1-transitRatio) * totalDemand); //Still put 0.5 if there are transit route
+				}
 			}
 			
 			logger.info("Starting from 0.5 auto and transit ratio");
@@ -252,13 +269,13 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	protected HashMap<Id<TransitLink>,Double> NetworkLoadingTransitSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,int counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
-		String s=this.odPairs.getODpairset().get(ODpairId).getSubPopulation();
-		LinkedHashMap<String,Double>newParam=params;
+	protected HashMap<Id<TransitLink>,Double> networkLoadingTransitSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,int counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
+		String s= this.odPairs.getODpairset().get(ODpairId).getSubPopulation();
+		LinkedHashMap<String,Double> newParam = params;
 		if(s!=null) {
 			newParam=this.generateSubPopSpecificParam(params, s);
 		}
-		return super.NetworkLoadingTransitSingleOD(ODpairId, timeBeanId, counter, newParam, anaParams);
+		return super.networkLoadingTransitSingleOD(ODpairId, timeBeanId, counter, newParam, anaParams);
 	}
 	
 	@Override
@@ -308,10 +325,11 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 			double linkTime = 0.0;
 			for(String s : this.timeBeans.keySet()) {
 				Tuple<Double, Double> times = this.timeBeans.get(s);
-				linkTime = ((CNLLinkToLink)this.networks.get(s).getLinks().get(fromLinkId)).getLinkToLinkTravelTime(toLinkId, times, this.Params, 
+				if(times.getFirst() <= time && time <= times.getSecond()) {
+					linkTime = ((CNLLinkToLink)this.networks.get(s).getLinks().get(fromLinkId)).getLinkToLinkTravelTime(toLinkId, times, this.Params, 
 						this.AnalyticalModelInternalParams);
-				if(times.getFirst() < time && time <= times.getSecond())
 					return linkTime;
+				}
 			}
 			return linkTime * 1000; //Return the final link time if their time is not found.
 		}else {

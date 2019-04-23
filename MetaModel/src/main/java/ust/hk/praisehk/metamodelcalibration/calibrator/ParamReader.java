@@ -182,7 +182,7 @@ public class ParamReader {
 		timeBean.put("EveningPeak2", new Tuple<Double,Double>(63000.,66600.));
 		timeBean.put("EveningPeak3", new Tuple<Double,Double>(66600.,70200.));
 		timeBean.put("Evening", new Tuple<Double,Double>(70200.,75600.));
-		timeBean.put("AfterEveningPeak", new Tuple<Double,Double>(75600.,86400.));
+		timeBean.put("AfterEveningPeak", new Tuple<Double,Double>(75600.,97200.));
 		return timeBean;
 	}
 	

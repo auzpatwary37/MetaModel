@@ -82,7 +82,7 @@ public class Trip {
 	}
 	
 	/**
-	 * Generate a Origin Destination Pair ID
+	 * Generate a Origin Destination Pair ID, and initialize the origin and destination node.
 	 * @param networkTPUSB The network with all centroids of TPUSB
 	 * @return
 	 */

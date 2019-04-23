@@ -30,7 +30,6 @@
 	</classpathentry>
 	<classpathentry combineaccessrules="false" kind="src" path="/matsim"/>
 	<classpathentry kind="src" path="/MATSim-HK"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/signals"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/jcool-core"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/5"/>
 	<classpathentry kind="output" path="target/classes"/>

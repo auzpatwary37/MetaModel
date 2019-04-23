@@ -48,7 +48,11 @@ public class MetaModelTravelTimeAndDisutility implements TravelDisutility, Trave
 		if (this.marginalUtlOfDistance == 0.0) {
 			return (this.getLinkTravelDisutility(link, time, person, vehicle)) * this.travelCostFactor;
 		}
-		return (this.getLinkTravelTime(link, time, person, vehicle)) * this.travelCostFactor - this.marginalUtlOfDistance * link.getLength();
+		double disutility = this.getLinkTravelTime(link, time, person, vehicle) * this.travelCostFactor - this.marginalUtlOfDistance * link.getLength();
+		if(disutility <= 0) {
+			throw new RuntimeException("The disutility must be positive!");
+		}
+		return disutility;
 	}
 
 	@Override

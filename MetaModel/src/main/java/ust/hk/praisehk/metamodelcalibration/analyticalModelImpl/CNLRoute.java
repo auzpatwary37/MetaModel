@@ -14,8 +14,6 @@ import org.matsim.core.utils.collections.Tuple;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelRoute;
 
-
-
 public class CNLRoute implements AnalyticalModelRoute{
 
 	private final Id<AnalyticalModelRoute> routeId;
@@ -37,9 +35,7 @@ public class CNLRoute implements AnalyticalModelRoute{
 	
 	public CNLRoute(Path p,Link startLink, Link endLink) {
 		this(AnalyticalModelRoute.PathToRouteConverter(p,startLink,endLink));
-		
 	}
-	
 	
 	@Override
 	public Route getRoute() {
@@ -57,8 +53,10 @@ public class CNLRoute implements AnalyticalModelRoute{
 			}else {
 				travelTime += ((CNLLink)thisLink).getLinkTravelTime(timeBean,params,anaParams);
 			}
-		}
-		return travelTime;
+			if(travelTime > 2e6) {
+				return 2e6;
+			}
+		}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       		return travelTime;
 	}
 	@Override
 	public double getRouteDistance() {
@@ -73,7 +71,6 @@ public class CNLRoute implements AnalyticalModelRoute{
 	 * Will be designed later
 	 *  
 	 */
-	
 	@Override
 	public double calcRouteUtility(LinkedHashMap<String, Double> parmas,LinkedHashMap<String, Double> anaParmas,AnalyticalModelNetwork network,Tuple<Double,Double>timeBean) {
 		
@@ -94,7 +91,7 @@ public class CNLRoute implements AnalyticalModelRoute{
 		}
 		double MUDistanceCar=parmas.get(CNLSUEModel.MarginalUtilityofDistanceCarName);
 		
-		this.RouteUtility=ModeConstant+
+		this.RouteUtility = ModeConstant+
 				this.getTravelTime(network,timeBean,parmas,anaParmas)*MUTravelTime+
 				(MUDistanceCar+MUMoney*DistanceBasedMoneyCostCar)*this.distanceTravelled;
 				
@@ -102,16 +99,13 @@ public class CNLRoute implements AnalyticalModelRoute{
  			System.out.println("Debug!!!!");
  		}
 		return this.RouteUtility*anaParmas.get(CNLSUEModel.LinkMiuName);
- 		
 	}
 	@Override
 	public double getOtherMoneyCost() {
 		// TODO This method is for future expansion
 		return 0;
 	}
-
-
-
+	
 	@Override
 	public String getRouteDescription() {
 		return this.routeId.toString();
@@ -126,8 +120,4 @@ public class CNLRoute implements AnalyticalModelRoute{
 	public ArrayList<Id<Link>> getLinkIds() {
 		return this.links;
 	}
-	
-	
-	
-	
 }

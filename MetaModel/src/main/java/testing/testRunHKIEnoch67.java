@@ -27,6 +27,8 @@ import dynamicTransitRouter.fareCalculators.LRFareCalculator;
 import dynamicTransitRouter.fareCalculators.MTRFareCalculator;
 import dynamicTransitRouter.fareCalculators.UniformFareCalculator;
 import dynamicTransitRouter.fareCalculators.ZonalFareXMLParserV2;
+import dynamicTransitRouter.transfer.BusMinibusTransferDiscount;
+import dynamicTransitRouter.transfer.TransferDiscountCalculator;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModelSubPop;
 import ust.hk.praisehk.metamodelcalibration.calibrator.ParamReader;
 
@@ -180,12 +182,13 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 		timeBean.put(Integer.toString(i), new Tuple<Double,Double>((i-1)*3600.,i*3600.));
 		
 	}
+	TransferDiscountCalculator tdc = new BusMinibusTransferDiscount("fare/GMB.csv");
 	//Object a=scenario.getPopulation().getPersonAttributes();
 	CNLSUEModelSubPop anaModel=new CNLSUEModelSubPop(config,ParamReader.getDefaultTimeBean(),subPopNames);
 	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getLanes(), 
-			scenario.getTransitSchedule(), scenario, fareCalculator);
+			scenario.getTransitSchedule(), scenario, fareCalculator, tdc, 0.7, false);
 	anaModel.generateMATSimRoutes(0.7, 2, 10);
-	anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation(), false);
+	anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation(), 0.7, false);
 	System.out.println("wait!!!!");
 	// Add the signal module to the controller
 	//Signals.configure(controler);

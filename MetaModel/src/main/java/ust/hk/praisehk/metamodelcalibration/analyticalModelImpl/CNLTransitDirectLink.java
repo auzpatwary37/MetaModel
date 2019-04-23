@@ -12,6 +12,7 @@ import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.vehicles.Vehicle;
+import org.matsim.vehicles.Vehicles;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
@@ -27,20 +28,31 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
  */
 
 public class CNLTransitDirectLink extends TransitDirectLink{
-	private Scenario scenario;
+	//private Scenario scenario;
+	Vehicles transitVehicles;
+	
+	
+	
 	public CNLTransitDirectLink(String startStopId, String endStopId, Id<Link> startLinkId, Id<Link> endLinkId,
-			TransitSchedule ts, String lineId, String routeId, Scenario scenario) {
-		super(startStopId, endStopId, startLinkId, endLinkId, ts, lineId, routeId);
-		this.scenario=scenario;
+			TransitRoute tr, Id<TransitLine> lineId, Vehicles transitVehicles) {
+		super(startStopId, endStopId, startLinkId, endLinkId, tr, lineId);
+		this.transitVehicles = transitVehicles;
 		this.TrLinkId=Id.create(startStopId.replaceAll("\\s+","")+"_"+endStopId.replaceAll("\\s+","")+"_"+
-		lineId.replaceAll("\\s+","")+"_"+routeId.replaceAll("\\s+",""),TransitLink.class);
-		
+		lineId.toString().replaceAll("\\s+","")+"_"+ tr.getId().toString().replaceAll("\\s+",""),TransitLink.class);
 	}
+	
+	@Deprecated
+	public CNLTransitDirectLink(String startStopId, String endStopId, Id<Link> startLinkId, Id<Link> endLinkId,
+			TransitSchedule ts, Id<TransitLine> lineId, Id<TransitRoute> routeId, Vehicles transitVehicles) {
+		this(startStopId, endStopId, startLinkId, endLinkId, ts.getTransitLines().get(lineId).getRoutes().get(routeId),
+				lineId, transitVehicles);
+	}
+	
 	public CNLTransitDirectLink(String RouteDescription, Id<Link> startLinkId, Id<Link> endLinkId,
-			TransitSchedule ts,Scenario scenario){
+			TransitSchedule ts, Vehicles transitVehicles){
 		this(RouteDescription.split("===")[1].trim(), RouteDescription.split("===")[4].trim(), 
-				startLinkId, endLinkId, ts, RouteDescription.split("===")[2].trim(), 
-				RouteDescription.split("===")[3].trim(),scenario);
+				startLinkId, endLinkId, ts, Id.create(RouteDescription.split("===")[2].trim(), TransitLine.class),
+				Id.create(RouteDescription.split("===")[3].trim(), TransitRoute.class),transitVehicles);
 	}
 	
 
@@ -83,16 +95,15 @@ public class CNLTransitDirectLink extends TransitDirectLink{
 	}
 	
 	public void calcCapacityAndHeadway(Map<String, Tuple<Double, Double>> timeBeans,String timeBeanId) {
-		Map<Id<Departure>,Departure>Departures= ts.getTransitLines().get(Id.create(lineId, TransitLine.class)).
-				getRoutes().get(Id.create(routeId, TransitRoute.class)).getDepartures();
+		Map<Id<Departure>,Departure> departures= route.getDepartures();
 		int noofVehicle=0;
-		for(Departure d:Departures.values()) {
+		for(Departure d : departures.values()) {
 			double time=d.getDepartureTime();
 			if(time>=timeBeans.get(timeBeanId).getFirst() && time<timeBeans.get(timeBeanId).getSecond()) {
 				noofVehicle++;
-				Id<Vehicle> vehicleId=d.getVehicleId();
-				this.capacity+=scenario.getTransitVehicles().getVehicles().get(vehicleId).getType().getCapacity().getSeats()+
-						scenario.getTransitVehicles().getVehicles().get(vehicleId).getType().getCapacity().getStandingRoom();
+				Id<Vehicle> vehicleId = d.getVehicleId();
+				this.capacity += (transitVehicles.getVehicles().get(vehicleId).getType().getCapacity().getSeats()+
+						transitVehicles.getVehicles().get(vehicleId).getType().getCapacity().getStandingRoom());
 			}
 		}
 		this.frequency=noofVehicle;
@@ -106,11 +117,9 @@ public class CNLTransitDirectLink extends TransitDirectLink{
 	}
 	
 	public CNLTransitDirectLink cloneLink(CNLTransitDirectLink tL) {
-		return new CNLTransitDirectLink(tL.getStartStopId(),tL.getEndStopId(),tL.getStartingLinkId(),tL.getEndingLinkId(),tL.getTs(),tL.getLineId(),tL.getRouteId(),tL.getScenario());
+		return new CNLTransitDirectLink(tL.startStopId, tL.endStopId, tL.startingLinkId,
+				tL.endingLinkId, tL.route, tL.lineId, tL.transitVehicles);
 		
-	}
-	protected Scenario getScenario() {
-		return scenario;
 	}
 	protected double getFrequency() {
 		return frequency;

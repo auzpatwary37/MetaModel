@@ -4,9 +4,10 @@ import java.util.Map;
 
 public final class TimeBeanUtils {
 	
-	public static String findTimeBean(Map<String, Tuple<Double, Double>> timeBeans, double time) {
+	public static String findTimeBean(Map<String, 
+			org.matsim.core.utils.collections.Tuple<Double, Double>> timeBeans, double time) {
 		time = (time==0)?1:time;
-		time = (time > 29*3600)? time = 29 * 3600:time;
+		time = (time > 27*3600)? time = 27 * 3600:time;
 		for(String s:timeBeans.keySet()) {
 			if(time>timeBeans.get(s).getFirst() && time<=timeBeans.get(s).getSecond()) {
 				return s;

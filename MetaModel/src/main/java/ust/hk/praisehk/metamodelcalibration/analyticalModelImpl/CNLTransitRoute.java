@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -111,7 +112,7 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 			}else{
 				directLinkCount++;
 				CNLTransitDirectLink dlink=new CNLTransitDirectLink(l.getRoute().getRouteDescription(), 
-						startLinkId, endLinkId, ts, scenario);
+						startLinkId, endLinkId, ts, scenario.getTransitVehicles());
 				tempDirectLinks.put(a, dlink);
 				a--;
 				
@@ -198,34 +199,24 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 		if(this.routeFare!=0) {
 			return this.routeFare;
 		}
-		this.routeFare=0;
 		String StartStopIdTrain=null;
 		String EndStopIdTrain=null;
 		int k=0;
 		for(CNLTransitDirectLink dlink :this.directLinks) {
 			k++;
-			Id<TransitLine> tlineId=Id.create(dlink.getLineId(), TransitLine.class);
-			Id<TransitRoute> trouteId=Id.create(dlink.getRouteId(), TransitRoute.class);
-			
+			Id<TransitLine> tlineId = dlink.getLineId();
+			Id<TransitRoute> trouteId = dlink.getRouteId();
 			
 			//Handling the train fare
 			if(ts.getTransitLines().get(tlineId).getRoutes().get(trouteId).getTransportMode().equals("train")) {
-				
-				if(StartStopIdTrain!=null) {//Train trip already started
-					EndStopIdTrain=dlink.getEndStopId();
-					if(k==this.directLinks.size()) {
-						MTRFareCalculator mtrFare=(MTRFareCalculator) farecalc.get("train");
-						this.routeFare=mtrFare.getMinFare(null, null, Id.create(StartStopIdTrain, TransitStopFacility.class),
-								Id.create(EndStopIdTrain, TransitStopFacility.class));
-					}
-				}else {//Train trip started in this link
-					StartStopIdTrain=dlink.getStartStopId();
-					EndStopIdTrain=dlink.getEndStopId();
-					if(k==this.directLinks.size()) {
-						MTRFareCalculator mtrFare=(MTRFareCalculator) farecalc.get("train");
-						this.routeFare=mtrFare.getMinFare(null, null, Id.create(StartStopIdTrain, TransitStopFacility.class),
-								Id.create(EndStopIdTrain, TransitStopFacility.class));
-					}
+				if(StartStopIdTrain == null) {
+					StartStopIdTrain=dlink.getStartStopId(); //Train trip not yet started
+				}
+				EndStopIdTrain=dlink.getEndStopId();
+				if(k==this.directLinks.size()) {
+					MTRFareCalculator mtrFare=(MTRFareCalculator) farecalc.get("train");
+					this.routeFare=mtrFare.getMinFare(null, null, Id.create(StartStopIdTrain, TransitStopFacility.class),
+							Id.create(EndStopIdTrain, TransitStopFacility.class));
 				}
 			}else{//not a train trip leg, so two possibilities, train trip just ended in the previous trip or completely new trip
 				if(StartStopIdTrain!=null) {//train trip just ended, the fare will be added.
@@ -235,12 +226,12 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 					StartStopIdTrain=null;
 					EndStopIdTrain=null;
 					//now bus fare of the current trip is added	
-					TransitRoute tr=ts.getTransitLines().get(Id.create(dlink.getLineId(),TransitLine.class)).getRoutes().get(Id.create(dlink.getRouteId(),TransitRoute.class));
-					this.routeFare+=farecalc.get(tr.getTransportMode()).getFares(tr.getId(), Id.create(dlink.getLineId(),TransitLine.class), 
+					TransitRoute tr=ts.getTransitLines().get(tlineId).getRoutes().get(trouteId);
+					this.routeFare+=farecalc.get(tr.getTransportMode()).getFares(trouteId, tlineId, 
 							Id.create(dlink.getStartStopId(), TransitStopFacility.class), Id.create(dlink.getEndStopId(), TransitStopFacility.class)).get(0);
 				}else {//only bus fare is added
-					TransitRoute tr=ts.getTransitLines().get(Id.create(dlink.getLineId(),TransitLine.class)).getRoutes().get(Id.create(dlink.getRouteId(),TransitRoute.class));
-					this.routeFare+=farecalc.get(tr.getTransportMode()).getFares(tr.getId(), Id.create(dlink.getLineId(),TransitLine.class), 
+					TransitRoute tr=ts.getTransitLines().get(tlineId).getRoutes().get(trouteId);
+					this.routeFare+=farecalc.get(tr.getTransportMode()).getFares(trouteId, tlineId, 
 							Id.create(dlink.getStartStopId(), TransitStopFacility.class), Id.create(dlink.getEndStopId(), TransitStopFacility.class)).get(0);
 				}
 			}
@@ -323,6 +314,10 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 		
 		return this.trLinks;
 	}
+	
+	/**
+	 * This function calculate and add the route capacity by the minimum capacity in the link in the route.
+	 */
 	@Override
 	public void calcCapacityHeadway(Map<String,Tuple<Double,Double>>timeBeans,String timeBeanId) {
 		double routecapacity=Double.MAX_VALUE;
@@ -355,5 +350,11 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 		CNLTransitRoute trRoute=new CNLTransitRoute(transferLinks,dlinks,this.scenario,this.transitSchedule,this.routeWalkingDistance,this.trRouteId.toString());
 		
 		return trRoute ; 
+	}
+
+	@Override
+	public List<Leg> getLegListRoute(double departureTime) {
+		// TODO Not implemented!
+		return null;
 	}
 }	

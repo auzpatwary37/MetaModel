@@ -17,11 +17,16 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.router.util.LeastCostPathCalculator.Path;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.facilities.ActivityFacility;
+import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.vehicles.VehicleType;
 import com.google.inject.Inject;
+
+import dynamicTransitRouter.TransitRouterFareDynamicImpl;
+import ust.hk.praisehk.metamodelcalibration.transit.ITransitRoute;
 
 /**
  * This is a self sufficient implementation of OD pair class.
@@ -38,8 +43,8 @@ public class AnalyticalModelODpair {
 	private double ExpectedMaximumTransitUtility;
 	private List<Id<Person>> personIdList = new ArrayList<>(); //TODO: Remove it.
 	
-	private final Node onode;
-	private final Node dnode;
+	protected final Node onode;
+	protected final Node dnode;
 	private final Coord ocoord;
 	private final Coord dcoord;
 	private double expansionFactor;
@@ -47,7 +52,7 @@ public class AnalyticalModelODpair {
 	//private Map <Id<VehicleType>,VehicleType> vt;
 	private Coord[] c;
 	private final Id<AnalyticalModelODpair> ODpairId;
-	private LinkedHashMap<Id<AnalyticalModelRoute>, Integer> routeset=new LinkedHashMap<>(); //I can't see why it should be a Map instead of List. Enoch.
+	private LinkedHashMap<Id<AnalyticalModelRoute>, Integer> routeCounter=new LinkedHashMap<>(); //I can't see why it should be a Map instead of List. Enoch.
 	private Map<Id<AnalyticalModelRoute>,AnalyticalModelRoute> RoutesWithDescription=new HashMap<>();
 	private ArrayList<AnalyticalModelRoute> finalRoutes;
 	private Map<Id<Link>,ArrayList<AnalyticalModelRoute>> linkIncidence=null;
@@ -57,13 +62,13 @@ public class AnalyticalModelODpair {
 	private double destinationParkingCharge=0;
 	private ActivityFacility OriginFacility;
 	private ActivityFacility DestinationFacility;
-	private Map<Id<AnalyticalModelTransitRoute>,AnalyticalModelTransitRoute> Transitroutes=new HashMap<>();
+	private Map<Id<AnalyticalModelTransitRoute>, AnalyticalModelTransitRoute> transitroutes=new HashMap<>();
 	private Map<Id<AnalyticalModelTransitRoute>, Integer> transitRouteCounter=new HashMap<>();
 	private ArrayList<AnalyticalModelTransitRoute> finalTrRoutes;
 	private Map<String,HashMap<Id<AnalyticalModelRoute>,Double>> routeUtility=new ConcurrentHashMap<>();
 	private Map<String,HashMap<Id<AnalyticalModelTransitRoute>, Double>> TrRouteUtility=new ConcurrentHashMap<>();
 	private final Map<String, Tuple<Double,Double>>timeBean;
-	private Map<String, ArrayList<AnalyticalModelTransitRoute>> timeBasedTransitRoutes=new HashMap<>();
+	private Map<String, ArrayList<AnalyticalModelTransitRoute>> timeBasedTransitRoutes=new ConcurrentHashMap<>();
 	private String subPopulation;
 	//private double PCU=1;
 	private int minRoute=5;
@@ -114,7 +119,7 @@ public class AnalyticalModelODpair {
 	 * @param dnode
 	 * @param network
 	 */
-	public AnalyticalModelODpair(Node onode,Node dnode, Network network,Map<String, Tuple<Double, Double>> timeBean2){
+	public AnalyticalModelODpair(Node onode, Node dnode, Network network, Map<String, Tuple<Double, Double>> timeBean2){
 		this.ocoord=onode.getCoord();
 		this.dcoord=dnode.getCoord();
 		this.onode=onode;
@@ -237,14 +242,14 @@ public class AnalyticalModelODpair {
 		if(trip.getRoute()!=null){
 			demand.put(timeId, demand.get(timeId)+trip.getCarPCU());
 			this.agentCARCounter+=trip.getCarPCU();
-			if(!routeset.containsKey(trip.getRoute().getRouteId())){//A new route 
-				routeset.put(trip.getRoute().getRouteId(),1);
+			if(!routeCounter.containsKey(trip.getRoute().getRouteId())){//A new route 
+				routeCounter.put(trip.getRoute().getRouteId(),1);
 				this.RoutesWithDescription.put(trip.getRoute().getRouteId(),trip.getRoute());
 				//this.RoutesWithDescription.get(trip.getRoute().getRouteDescription()).addPerson(trip.getPersonId());
 				//this.no_of_occurance.put(trip.getRouteId(), 1);
 
 			}else{ //not a new route
-				this.routeset.put(trip.getRoute().getRouteId(), routeset.get(trip.getRoute().getRouteId())+1);
+				this.routeCounter.put(trip.getRoute().getRouteId(), routeCounter.get(trip.getRoute().getRouteId())+1);
 				//this.RoutesWithDescription.get(trip.getRoute().getRouteDescription()).addPerson(trip.getPersonId());
 			}
 		}else if(trip.getTrRoute()!=null) {
@@ -253,8 +258,8 @@ public class AnalyticalModelODpair {
 //			}
 			demand.put(timeId, demand.get(timeId)+1);
 			this.agentTrCounter++;
-			if(!this.Transitroutes.containsKey(trip.getTrRoute().getTrRouteId())) {
-				this.Transitroutes.put(trip.getTrRoute().getTrRouteId(),trip.getTrRoute());
+			if(!this.transitroutes.containsKey(trip.getTrRoute().getTrRouteId())) {
+				this.transitroutes.put(trip.getTrRoute().getTrRouteId(),trip.getTrRoute());
 				this.transitRouteCounter.put(trip.getTrRoute().getTrRouteId(), 1);
 			}else {
 				this.transitRouteCounter.put(trip.getTrRoute().getTrRouteId(),this.transitRouteCounter.get(trip.getTrRoute().getTrRouteId())+ 1);
@@ -268,22 +273,27 @@ public class AnalyticalModelODpair {
 	
 	public void addCarRoute(AnalyticalModelRoute r) {
 		this.agentCARCounter++;
-		if(!routeset.containsKey(r.getRouteId())){//A new route 
-			routeset.put(r.getRouteId(),1);
+		if(!routeCounter.containsKey(r.getRouteId())){//A new route 
+			routeCounter.put(r.getRouteId(),1);
 			this.RoutesWithDescription.put(r.getRouteId(),r);
 			
 		}else{ //not a new route, This should not happen in this case or should it???
-			this.routeset.put(r.getRouteId(), routeset.get(r.getRouteId())+1);
+			this.routeCounter.put(r.getRouteId(), routeCounter.get(r.getRouteId())+1);
 		}
-		
 	}
 	
 	/**
-	 * !!!WARNING!!!
-	 * This do not work. Here for future improvement while adding pt routeset generation
+	 * Add the transit route to the respective route sets.
 	 */
-	public void addTransitRoute() {
-		
+	public void addTransitRoute(TransitRouterFareDynamicImpl planRouter, Coord fromCoord, Coord toCoord, Path transitPath) {
+		this.agentTrCounter++; //TODO: See if I need to add one here or not.
+		AnalyticalModelTransitRoute tr = new ITransitRoute(planRouter, fromCoord, toCoord, transitPath);
+		if(!this.transitroutes.containsKey(tr.getTrRouteId())) { //A new route
+			this.transitroutes.put(tr.getTrRouteId(), tr);
+			this.transitRouteCounter.put(tr.getTrRouteId(), 1);
+		}else {
+			this.transitRouteCounter.put(tr.getTrRouteId(), this.transitRouteCounter.get(tr.getTrRouteId()) + 1);
+		}
 	}
 	
 	public String getTimeBean(double tripStartTime) {
@@ -329,7 +339,7 @@ public class AnalyticalModelODpair {
 	 * @return
 	 */
 	public LinkedHashMap<Id<AnalyticalModelRoute>, Integer> getRouteset() {
-		return routeset;
+		return routeCounter;
 	}
 
 	public Tuple<Id<Link>,Id<Link>> getStartAndEndLinkIds(){
@@ -387,7 +397,7 @@ public class AnalyticalModelODpair {
 		if(this.agentCARCounter!=0) {
 			this.routePercentage=routePercentage;
 			this.finalRoutes=new ArrayList<>();
-			for(Entry<Id<AnalyticalModelRoute>, Integer> e:routeset.entrySet()) {
+			for(Entry<Id<AnalyticalModelRoute>, Integer> e:routeCounter.entrySet()) {
 				if(((double)e.getValue()/(double)this.agentCARCounter*100)>routePercentage) {
 					this.finalRoutes.add(this.RoutesWithDescription.get(e.getKey()));
 					for(String timeBeanId:this.timeBean.keySet()) {
@@ -395,18 +405,18 @@ public class AnalyticalModelODpair {
 					}
 				}
 			}
-			if(finalRoutes.size()<=this.minRoute && finalRoutes.size()<=this.routeset.size()) {
-				ArrayList<Integer> tripCount=new ArrayList<Integer>(this.routeset.values());
+			if(finalRoutes.size()<=this.minRoute && finalRoutes.size()<=this.routeCounter.size()) {
+				ArrayList<Integer> tripCount=new ArrayList<Integer>(this.routeCounter.values());
 				Collections.sort(tripCount);
 				Collections.reverse(tripCount);
-				if(routeset.size()<=this.minRoute) {
+				if(routeCounter.size()<=this.minRoute) {
 					for(AnalyticalModelRoute r:this.RoutesWithDescription.values()) {
 						if(!finalRoutes.contains(r)) {
 							this.finalRoutes.add(r);
 						}
 					}
 				}else {
-					for(java.util.Map.Entry<Id<AnalyticalModelRoute>, Integer> e:routeset.entrySet()) {
+					for(java.util.Map.Entry<Id<AnalyticalModelRoute>, Integer> e:routeCounter.entrySet()) {
 						if(e.getValue()>tripCount.get(this.minRoute-1)) {
 							this.finalRoutes.add(this.RoutesWithDescription.get(e.getKey()));
 							for(String timeBeanId:this.timeBean.keySet()) {
@@ -421,38 +431,43 @@ public class AnalyticalModelODpair {
 		}
 	}
 	
-	
-	
+	/**
+	 * This function get the transitRoute in the transitRouteCounter and put into the finalTrRoutes.
+	 * @param routePercentage
+	 */
 	public void generateTRRoutes(double routePercentage) {
-		for(String timeBean:this.timeBean.keySet()) {
-			this.TrRouteUtility.put(timeBean,new HashMap<Id<AnalyticalModelTransitRoute>,Double>());
-		}
+//		for(String timeBean:this.timeBean.keySet()) {
+//			this.TrRouteUtility.put(timeBean,new HashMap<Id<AnalyticalModelTransitRoute>,Double>());
+//		}
 		if(this.agentTrCounter!=0) {
-			finalTrRoutes=new ArrayList<>();
-			for(Entry<Id<AnalyticalModelTransitRoute>, Integer> e:this.transitRouteCounter.entrySet()) {
+			this.finalTrRoutes=new ArrayList<>();
+			for(Entry<Id<AnalyticalModelTransitRoute>, Integer> e:this.transitRouteCounter.entrySet()) { //For every tr route
 				if(((double)e.getValue()/(double)this.agentTrCounter*100)>routePercentage||this.transitRouteCounter.size()<=this.minRoute) {
-					this.finalTrRoutes.add(this.Transitroutes.get(e.getKey()));
+					this.finalTrRoutes.add(this.transitroutes.get(e.getKey()));
 					for(String timeBeanId:this.timeBean.keySet()) {
-						AnalyticalModelTransitRoute tr=this.Transitroutes.get(e.getKey());
+						AnalyticalModelTransitRoute tr=this.transitroutes.get(e.getKey());
 						tr.calcCapacityHeadway(this.timeBean, timeBeanId);
-//						if((double)tr.getRouteCapacity().get(timeBeanId)!=0) {
-//							this.TrRouteUtility.get(timeBeanId).put(tr.getTrRouteId(), 0.0);
-//						}
+						if((double)tr.getRouteCapacity().get(timeBeanId)!=0) {
+							this.TrRouteUtility.get(timeBeanId).put(tr.getTrRouteId(), 0.0); //Reset the utility to zero.
+						}
 					}
 				}
 			}
+			
+			//Add transit routes until reaching the minRoute requirement, by adding the trips with most usage.
+			//Question: Why we have to attain that number of routes?
 			if(finalTrRoutes.size()<=this.minRoute && finalTrRoutes.size()<=this.transitRouteCounter.size()) {
 				ArrayList<Integer> tripCount=new ArrayList<Integer>(this.transitRouteCounter.values());
 				Collections.sort(tripCount);
 				Collections.reverse(tripCount);
 				if(transitRouteCounter.size()<=this.minRoute) {
-					this.finalTrRoutes.addAll(this.Transitroutes.values());
+					this.finalTrRoutes.addAll(this.transitroutes.values());
 				}else {
 					for(Entry<Id<AnalyticalModelTransitRoute>, Integer> e:this.transitRouteCounter.entrySet()) {
 						if(e.getValue()>tripCount.get(this.minRoute-1)) {
-							this.finalTrRoutes.add(this.Transitroutes.get(e.getKey()));
+							this.finalTrRoutes.add(this.transitroutes.get(e.getKey()));
 							for(String timeBeanId:this.timeBean.keySet()) {
-								AnalyticalModelTransitRoute tr=this.Transitroutes.get(e.getKey());
+								AnalyticalModelTransitRoute tr=this.transitroutes.get(e.getKey());
 								tr.calcCapacityHeadway(this.timeBean, timeBeanId);
 							}
 						}
@@ -466,10 +481,17 @@ public class AnalyticalModelODpair {
 		
 	}
 	
-	public void updateRouteUtility(Id<AnalyticalModelRoute> routeId, double utility,String timeBeanId) {
+	public void updateRouteUtility(Id<AnalyticalModelRoute> routeId, double utility, String timeBeanId) {
 		this.routeUtility.get(timeBeanId).put(routeId, utility);
 	}
-	public void updateTrRouteUtility(Id<AnalyticalModelTransitRoute> id, double utility,String timeBeanId) {
+	
+	/**
+	 * This fuction puts the route utility to the TransitRoute
+	 * @param id
+	 * @param utility
+	 * @param timeBeanId
+	 */
+	public void updateTrRouteUtility(Id<AnalyticalModelTransitRoute> id, double utility, String timeBeanId) {
 		this.TrRouteUtility.get(timeBeanId).put(id, utility);
 	}
 	
@@ -483,10 +505,10 @@ public class AnalyticalModelODpair {
 	
 	/**
 	 * This function will be used to delete some routes. This requires recreating the final routeset 
-	 * @param remaingingRouteNo
+	 * @param remainingRouteNo
 	 */
-	public void deleteCarRoute(int remaingingRouteNo) {
-		if(this.routeset.size()<=remaingingRouteNo) {
+	public void deleteCarRoute(int remainingRouteNo) {
+		if(this.routeCounter.size()<=remainingRouteNo) {
 			return;
 		}
 		boolean demandZero=true;
@@ -516,15 +538,15 @@ public class AnalyticalModelODpair {
 			logSumRouteUtility.put(routeId,Math.log(logSumRouteUtility.get(routeId)));
 		}
 		List<Double> orderedRouteUtility = new ArrayList<Double>(logSumRouteUtility.values());
-		if(orderedRouteUtility.isEmpty()) {
-			return; //I don't know why, but all utilities are 0.
+		if(orderedRouteUtility.isEmpty() || orderedRouteUtility.size() < remainingRouteNo) {
+			return; //TODO: Make adjustment as sometimes utility is still zero when there is demand
 		}
 		Collections.sort(orderedRouteUtility);
 		Collections.reverse(orderedRouteUtility); //Sort the log sum route utility
-		double criticalUtility = orderedRouteUtility.get(remaingingRouteNo);
+		double criticalUtility = orderedRouteUtility.get(remainingRouteNo);
 		for(Id<AnalyticalModelRoute> routeId : logSumRouteUtility.keySet()) {
 			if(logSumRouteUtility.get(routeId) < criticalUtility) {
-				this.routeset.remove(routeId); //Remove both route set and description
+				this.routeCounter.remove(routeId); //Remove both route set and description
 				this.RoutesWithDescription.remove(routeId);
 			}
 		}
@@ -582,7 +604,7 @@ public class AnalyticalModelODpair {
 		}
 		
 		if(finalTrRoutes==null) {
-			this.generateTRRoutes(routePercentage);
+			this.generateTRRoutes(routePercentage); //It would generate the TR route if the agent tr route counter is not 0.
 		}
 		if(this.finalTrRoutes!=null) {
 			for(AnalyticalModelTransitRoute route:finalTrRoutes){
@@ -600,7 +622,7 @@ public class AnalyticalModelODpair {
 		}
 		//System.out.println();
 		
-		if((this.finalRoutes!=null ||this.finalTrRoutes!=null)&&(this.routeset.size()!=0 && this.finalRoutes.size()==0)||(this.transitRouteCounter.size()!=0 && this.finalTrRoutes.size()==0)) {
+		if((this.finalRoutes!=null ||this.finalTrRoutes!=null)&&(this.routeCounter.size()!=0 && this.finalRoutes.size()==0)||(this.transitRouteCounter.size()!=0 && this.finalTrRoutes.size()==0)) {
 			throw new IllegalArgumentException("Stop!!! No Routes Were Created!!!");
 		}
 	}
@@ -636,13 +658,21 @@ public class AnalyticalModelODpair {
 	 * clones the routes
 	 * @return
 	 */
-	public ArrayList<AnalyticalModelTransitRoute> getTrRoutes(Map<String, Tuple<Double, Double>> timeBean2,String timeBeanId) {
-		if(this.timeBasedTransitRoutes.size()==0) {
-			this.generateTimeBasedTransitRoutes(timeBean2);
+	public List<AnalyticalModelTransitRoute> getTrRoutes(Map<String, Tuple<Double, Double>> timeBeans,String timeBeanId, int iteration) {
+		//if(this.timeBasedTransitRoutes.size()==0) {
+		if(iteration == 1)
+			this.generateTimeBasedTransitRoutes(timeBeans); //Generate the transit routes based on the route set in the first iteration
+		//}
+		List<AnalyticalModelTransitRoute> trRoutes = this.timeBasedTransitRoutes.get(timeBeanId);
+		if(trRoutes == null) {
+			this.generateTimeBasedTransitRoutes(timeBeans);
+			trRoutes = this.timeBasedTransitRoutes.get(timeBeanId);
+			throw new RuntimeException("There is no route!");
 		}
-		return this.timeBasedTransitRoutes.get(timeBeanId);
+		return trRoutes;
 	}
-	public ArrayList<AnalyticalModelTransitRoute> getTrRoutes(){
+	
+	public List<AnalyticalModelTransitRoute> getTrRoutes(){
 		if(this.finalTrRoutes==null) {
 			return new ArrayList<AnalyticalModelTransitRoute>();
 		}
@@ -693,21 +723,23 @@ public class AnalyticalModelODpair {
 		return timeBean;
 	}
 
-	public void generateTimeBasedTransitRoutes(Map<String, Tuple<Double, Double>> timeBean2) {
+	public synchronized void generateTimeBasedTransitRoutes(Map<String, Tuple<Double, Double>> timeBeans) {
+		this.timeBasedTransitRoutes.clear();
 		if(this.finalTrRoutes!=null) {
-			for(String timeBeanId:timeBean2.keySet()) {
-			ArrayList<AnalyticalModelTransitRoute> timeBasedTrRoutes=new ArrayList<>();
-			for(AnalyticalModelTransitRoute tr:this.finalTrRoutes) {
-				AnalyticalModelTransitRoute trnew=tr.cloneRoute();
-				trnew.calcCapacityHeadway(timeBean2, timeBeanId);
-				if((Double)tr.getRouteCapacity().get(timeBeanId)!=0) {
-					timeBasedTrRoutes.add(trnew);
+			for(String timeBeanId:timeBeans.keySet()) {
+				ArrayList<AnalyticalModelTransitRoute> timeBasedTrRoutes=new ArrayList<>();
+				for(AnalyticalModelTransitRoute tr:this.finalTrRoutes) {
+					AnalyticalModelTransitRoute trnew=tr.cloneRoute(); //TODO: There is a bug that it cannot give the correct link for timeBin
+					trnew.calcCapacityHeadway(timeBeans, timeBeanId);
+					//It would be added if it is a transit route.
+					if(trnew instanceof ITransitRoute || (Double)tr.getRouteCapacity().get(timeBeanId)!=0) {
+						timeBasedTrRoutes.add(trnew);
+					}
+					
 				}
-				
+				this.timeBasedTransitRoutes.put(timeBeanId,timeBasedTrRoutes);
 			}
-			this.timeBasedTransitRoutes.put(timeBeanId,timeBasedTrRoutes);
 		}
-	}
 	}
 	
 	public double getTotalTrip() {

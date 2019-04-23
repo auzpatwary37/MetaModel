@@ -30,16 +30,12 @@ public class CNLTransitTransferLink extends TransitTransferLink {
 		super(startStopId, endStopId, startLinkId, endLinkId);
 		this.nextdLink=dlink;
 		if(dlink!=null) {
-			this.trLinkId=Id.create(dlink.getLineId().replaceAll("\\s+", "")+"_"+dlink.getRouteId().replaceAll("\\s+", "")+
+			this.trLinkId=Id.create(dlink.getLineId().toString().replaceAll("\\s+", "")+"_"+dlink.getRouteId().toString().replaceAll("\\s+", "")+
 					"_"+dlink.getStartStopId().replaceAll("\\s+", ""),TransitLink.class);
 		}else {
 			this.trLinkId=Id.create("Destination",TransitLink.class);
 		}
 	}
-	
-
-	
-
 	
 	/**
 	 * the network is not needed that much for this function
@@ -53,19 +49,20 @@ public class CNLTransitTransferLink extends TransitTransferLink {
 	 * this method calculates waiting time depending on the following formulae
 	 * 
 	 * waiting time=alpha/Frequency+1/Frequency*((PassengerTryingToBoard+PassengeronBoard)/(Frequency*Capacity))^beta
-	 * for default value of alpha and beta, BPR function alpha beta has been used. 
+	 * for default value of alpha and beta, BPR function alpha beta has been used.
+	 * 
+	 * TODO: FIX it to significantly increase the waiting time if there is no vehicle available
 	 * 
 	 * returns 0 if this transfer link is the last one of the trip 
 	 */
 	@Override
-	public double getWaitingTime(LinkedHashMap<String,Double> anaParams,AnalyticalModelNetwork network) {
-		
+	public double getWaitingTime(LinkedHashMap<String,Double> anaParams, AnalyticalModelNetwork network) {
 		if(this.nextdLink!=null) {
 			headway=this.nextdLink.getHeadway();
 			capacity=this.nextdLink.getCapacity();
 			double noOfVehicles=this.nextdLink.getFrequency();
 			currentOnboardPassenger=((CNLLink)network.getLinks().get(this.nextdLink.getLinkList().get(0)))
-				.getTransitPassengerVolume(this.nextdLink.getLineId()+"_"+this.nextdLink.getRouteId());
+				.getTransitPassengerVolume(this.nextdLink.getLineId().toString()+"_"+this.nextdLink.getRouteId().toString());
 			this.waitingTime=headway*anaParams.get(CNLSUEModel.TransferalphaName)+
 					headway*Math.pow((this.passangerCount+this.currentOnboardPassenger)/(capacity*noOfVehicles),anaParams.get(CNLSUEModel.TransferbetaName));
 			if(this.waitingTime==Double.NaN||this.waitingTime==Double.POSITIVE_INFINITY) {
@@ -77,24 +74,15 @@ public class CNLTransitTransferLink extends TransitTransferLink {
 			return 0;
 		}
 	}
-
-
-
-
-
+	
 	@Override
 	public Id<TransitLink> getTrLinkId() {
-		
 		return this.trLinkId;
 	}
 	
 	public CNLTransitTransferLink cloneLink(CNLTransitTransferLink tl,CNLTransitDirectLink dlink) {
-		return new CNLTransitTransferLink(tl.getStartStopId(),tl.getEndStopId(),tl.getStartingLinkId(),tl.getEndingLinkId(),null,dlink);
+		return new CNLTransitTransferLink(tl.startStopId,tl.endStopId,tl.startingLinkId,tl.endingLinkId,null,dlink);
 	}
-
-
-
-
 
 	protected CNLTransitDirectLink getNextdLink() {
 		return nextdLink;

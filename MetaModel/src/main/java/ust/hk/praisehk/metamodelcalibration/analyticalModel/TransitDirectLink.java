@@ -17,6 +17,17 @@ import org.matsim.pt.transitSchedule.api.TransitSchedule;
  * @param <anaNet>Type of network used
  */
 public abstract class TransitDirectLink extends TransitLink{
+	
+	
+	//direct link parameters
+	
+	protected ArrayList<Id<Link>> linkList=new ArrayList<>();
+	protected Id<TransitLine> lineId;
+	protected Id<TransitRoute> routeId;
+	//protected TransitSchedule ts;
+	protected TransitRoute route;
+	protected double distance=0;
+	
 	/**
 	 * Constructor
 	 * 
@@ -25,63 +36,62 @@ public abstract class TransitDirectLink extends TransitLink{
 	 * @param startLinkId
 	 * @param endLinkId
 	 */
-	
+	@Deprecated
 	public TransitDirectLink(String startStopId, String endStopId, Id<Link> startLinkId, 
-			Id<Link> endLinkId, TransitSchedule ts, String lineId, String routeId) {
-			
+			Id<Link> endLinkId, TransitSchedule ts, Id<TransitLine> lineId, Id<TransitRoute> routeId) {
+		//super(startStopId, endStopId, startLinkId, endLinkId);
+		this(startStopId, endStopId, startLinkId, endLinkId, 
+				ts.getTransitLines().get(lineId).getRoutes().get(routeId), lineId);
+	}
+	
+	/**
+	 * A new constructor taking more suitable data.
+	 * @param startStopId Start stop Id of the route
+	 * @param endStopId End stop Id of the route
+	 * @param startLinkId Start link Id
+	 * @param endLinkId End link Id
+	 * @param tr transitRoute
+	 * @param lineId lineId for later usage
+	 */
+	public TransitDirectLink(String startStopId, String endStopId, Id<Link> startLinkId, 
+			Id<Link> endLinkId, TransitRoute tr, Id<TransitLine> lineId) {
 		super(startStopId, endStopId, startLinkId, endLinkId);
-		this.ts=ts;
+		this.route = tr;
 		this.lineId=lineId;
-		this.routeId=routeId;
-		Id<Link> strtLink=ts.getTransitLines().get(Id.create(this.lineId,TransitLine.class)).getRoutes()
-				.get(Id.create(this.routeId,TransitRoute.class)).getRoute().getStartLinkId();
-		Id<Link> endLink=ts.getTransitLines().get(Id.create(this.lineId,TransitLine.class)).getRoutes()
-				.get(Id.create(this.routeId,TransitRoute.class)).getRoute().getEndLinkId();
+		this.routeId = tr.getId();
 		ArrayList<Id<Link>> routeLinks=new ArrayList<>();
-		routeLinks.add(strtLink);
-		routeLinks.addAll(this.ts.getTransitLines().get(Id.create(this.lineId,TransitLine.class)).getRoutes()
-				.get(Id.create(this.routeId,TransitRoute.class)).getRoute().getLinkIds());
-		routeLinks.add(endLink);
-		int identifier=0;
+		routeLinks.add( tr.getRoute().getStartLinkId() );
+		routeLinks.addAll(tr.getRoute().getLinkIds());
+		routeLinks.add( tr.getRoute().getEndLinkId() );
+		
+		//Get the corresponding analytical model link for the transitDirectLink
+		boolean passedStartStop = false;
 		for(Id<Link> linkId:routeLinks) {
-			if(linkId.toString().equals(this.getStartingLinkId().toString())){
-				identifier++;
-			}else if(linkId.toString().equals(this.getEndingLinkId().toString())) {
-				if(identifier==1) {
-					identifier--;
-				}
+			if(linkId.toString().equals(this.startingLinkId.toString())){
+				passedStartStop = true;
+			}else if(passedStartStop && linkId.toString().equals(this.endingLinkId.toString())) {
+				break;
 			}
-			if(identifier==1) {
+			
+			if(passedStartStop) {
 				this.linkList.add(linkId);
 			}
 		}
-		
 	}
-	
-	
-	
-	
-	//direct link parameters
-	
-	protected ArrayList<Id<Link>> linkList=new ArrayList<>();
-	protected String lineId;
-	protected String routeId;
-	protected TransitSchedule ts;
-	protected double distance=0;
 	
 	public ArrayList<Id<Link>> getLinkList() {
 		return linkList;
 	}
-	public String getLineId() {
+	public Id<TransitLine> getLineId() {
 		return lineId;
 	}
-	public String getRouteId() {
+	public Id<TransitRoute> getRouteId() {
 		return routeId;
 	}
 	public abstract double getLinkTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams);
-	public TransitSchedule getTs() {
-		return ts;
-	}
+//	public TransitSchedule getTs() {
+//		return ts;
+//	}
 	
 
 }

@@ -15,6 +15,8 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
  */
 public class CNLLink extends AnalyticalModelLink{
 	
+	public static double effectiveCapacity = 0.9;
+	
 	/**
 	 * a new parameter is required to store the link passenger volume by route and line Id 
 	 * a HashMap<String, double> Has to be created with the String lineId_routeId as key and passenger volume as value 
@@ -74,7 +76,7 @@ public class CNLLink extends AnalyticalModelLink{
 	}
 	
 	public double getMaximumFlowCapacity(Tuple<Double,Double> timeBean,LinkedHashMap<String,Double>params) {
-		return super.getCapacity()*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName)*this.gcRatio;
+		return super.getCapacity()*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName)*this.gcRatio * effectiveCapacity;
 	}
 	
 	
@@ -91,8 +93,10 @@ public class CNLLink extends AnalyticalModelLink{
 			
 			double linkTravelTime = freeflowTime*(1+ anaParams.get(CNLSUEModel.BPRalphaName)*
 									Math.pow(totalpcu/capacity, anaParams.get(CNLSUEModel.BPRbetaName))) / this.gcRatio;
-			if(totalpcu>capacity) {
-				return linkTravelTime * Math.exp(5* (totalpcu/capacity - 1));
+			if(totalpcu / capacity > 3) {
+				return linkTravelTime * Math.exp(6); //15 = 5 * (4 - 1)
+			}else if(totalpcu > capacity) {
+				return linkTravelTime * Math.exp(2* (totalpcu/capacity - 1));
 			}
 			
 			return linkTravelTime;

@@ -30,6 +30,8 @@ import org.matsim.vehicles.Vehicles;
 
 import com.google.common.collect.Lists;
 
+import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.TimeSpecificODPair;
+
 
 
 public abstract class AnalyticalModelODpairs {
@@ -43,6 +45,7 @@ public abstract class AnalyticalModelODpairs {
 	private Map<Id<AnalyticalModelODpair>,Double> ODdemand=new HashMap<>();
 	//private Map<Id<AnalyticalModelODpair>,Double> ODdemandperhour=new HashMap<>();
 	private final Map<String,Tuple<Double,Double>> timeBins; //There contains all time bins.
+	public static boolean timeDependentOD = true;
 	
 	public Vehicles getVehicles() {
 		return vehicles;
@@ -232,6 +235,12 @@ public abstract class AnalyticalModelODpairs {
 	protected AnalyticalModelODpair getNewODPair(Node oNode,Node dNode, Network network,Map<String, Tuple<Double,Double>> timeBean2,String subPopName) {
 		return new AnalyticalModelODpair(oNode,dNode,network,timeBean2,subPopName);
 	}
+	
+	private TimeSpecificODPair getNewTimeODPair(Node oNode,Node dNode, Network network,
+			Map<String, Tuple<Double,Double>> timeBin,String subPopName, double time) {
+		return new TimeSpecificODPair(oNode, dNode, network, timeBin, subPopName, time);
+	}
+	
 	public Map<String, Tuple<Double,Double>> getTimeBean() {
 		return timeBins;
 	}
@@ -373,14 +382,26 @@ public abstract class AnalyticalModelODpairs {
 			}
 			trip.setCarPCU(pcu);
 			if(!trip.getStartLinkId().toString().equals(trip.getEndLinkId().toString())) { //We ignore all trips with same OD.
-				Id<AnalyticalModelODpair> ODId = trip.generateODpairId(odNetwork);
-				if (ODpairset.containsKey(ODId)){
-					ODpairset.get(ODId).addtripWithoutRoute(trip, carOnly);
-				}else{
-					AnalyticalModelODpair odpair=this.getNewODPair( trip.getOriginNode(), trip.getDestinationNode(), 
-							network, this.timeBins, trip.getSubPopulationName());
-					odpair.addtripWithoutRoute(trip, carOnly);
-					ODpairset.put(ODId, odpair);
+				Id<AnalyticalModelODpair> ODId = trip.generateODpairId(odNetwork); //Generate 
+				if(!timeDependentOD) {
+					if (ODpairset.containsKey(ODId)){
+						ODpairset.get(ODId).addtripWithoutRoute(trip, carOnly);
+					}else{
+						AnalyticalModelODpair odpair=this.getNewODPair( trip.getOriginNode(), trip.getDestinationNode(), 
+								network, this.timeBins, trip.getSubPopulationName());
+						odpair.addtripWithoutRoute(trip, carOnly);
+						ODpairset.put(ODId, odpair);
+					}
+				}else {
+					AnalyticalModelODpair odpair=this.getNewTimeODPair(trip.getOriginNode(), trip.getDestinationNode(), 
+							network, this.timeBins, trip.getSubPopulationName(), trip.getStartTime());
+					ODId = odpair.getODpairId();
+					if (ODpairset.containsKey(ODId)){
+						ODpairset.get(ODId).addtripWithoutRoute(trip, carOnly);
+					}else{
+						odpair.addtripWithoutRoute(trip, carOnly);
+						ODpairset.put(ODId, odpair);
+					}
 				}
 			}
 		}
@@ -397,7 +418,11 @@ public abstract class AnalyticalModelODpairs {
 }
 
 
-
+/**
+ * It is a parallel thread to create trips from plan
+ * @author cetest
+ *
+ */
 class TripsCreatorFromPlan implements Runnable {
 	private List<Person> Persons;
 	AnalyticalModelODpairs odPairs;

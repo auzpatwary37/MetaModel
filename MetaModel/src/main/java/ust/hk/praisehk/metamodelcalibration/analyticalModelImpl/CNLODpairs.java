@@ -1,6 +1,7 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModelImpl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
@@ -13,6 +14,7 @@ import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpair;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpairs;
+import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelRoute;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelTransitRoute;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TripChain;
@@ -55,8 +57,9 @@ public class CNLODpairs extends AnalyticalModelODpairs{
 	public Map<Id<TransitLink>, TransitLink> getTransitLinks(Map<String,Tuple<Double,Double>> timeBean,String timeBeanId){
 		Map<Id<TransitLink>,TransitLink> transitLinks=new HashMap<>();
 		for(AnalyticalModelODpair odPair:this.getODpairset().values()) {
-			if(odPair.getTrRoutes(timeBean,timeBeanId)!=null && odPair.getTrRoutes(timeBean,timeBeanId).size()!=0) {
-				for(AnalyticalModelTransitRoute tr:odPair.getTrRoutes(timeBean,timeBeanId)) {
+			List<AnalyticalModelTransitRoute> routes = odPair.getTrRoutes(timeBean,timeBeanId, 0);
+			if(routes!=null && routes.size()!=0) {
+				for(AnalyticalModelTransitRoute tr : routes) {
 					transitLinks.putAll(((CNLTransitRoute)tr).getTransitLinks(timeBean,timeBeanId));
 				}
 			}

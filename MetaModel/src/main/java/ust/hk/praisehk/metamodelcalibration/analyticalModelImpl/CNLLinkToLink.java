@@ -56,7 +56,7 @@ public class CNLLinkToLink extends CNLLink {
 	
 	public double getMaximumToLinkFlowCapacity(Id<Link> toLinkId, Tuple<Double,Double> timeBean, LinkedHashMap<String,Double> params) {
 		return toLinkCapacity.get(toLinkId)*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName) 
-				* this.toLinkGcRatio.get(toLinkId);
+				* this.toLinkGcRatio.get(toLinkId) * effectiveCapacity;
 	}
 	
 	public double getLinkCarVolume(Id<Link> toLinkId) {
@@ -109,8 +109,10 @@ public class CNLLinkToLink extends CNLLink {
 		
 		double toLinkTravelTime = freeflowTime*(1+ anaParams.get(CNLSUEModel.BPRalphaName)*
 								Math.pow(totalpcu/capacity, anaParams.get(CNLSUEModel.BPRbetaName))) / this.gcRatio;
-		if(totalpcu>capacity) {
-			return toLinkTravelTime * Math.exp(5* (totalpcu/capacity - 1));
+		if(totalpcu / capacity > 3) {
+			return toLinkTravelTime * Math.exp(4); //15 = 2 * (3 - 1)
+		}else if(totalpcu > capacity) {
+			return toLinkTravelTime * Math.exp(2 * (totalpcu/capacity - 1));
 		}
 		
 		return Math.max(toLinkTravelTime, getLinkTravelTime(timeBean, params, anaParams)); //Whatever larger limits the link travel time

@@ -2,9 +2,11 @@ package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.population.Leg;
 import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
@@ -59,6 +61,8 @@ public interface AnalyticalModelTransitRoute{
 	public abstract ArrayList<Id<TransitLink>> getTrLinkIds();
 	
 	public Map<String, Double> getRouteCapacity();
+	
+	public List<Leg> getLegListRoute(double departureTime);
 	
 	public void calcCapacityHeadway(Map<String, Tuple<Double, Double>> timeBean,String timeBeanId);
 	
