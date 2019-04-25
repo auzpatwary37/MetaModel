@@ -667,7 +667,9 @@ public class AnalyticalModelODpair {
 		if(trRoutes == null) {
 			this.generateTimeBasedTransitRoutes(timeBeans);
 			trRoutes = this.timeBasedTransitRoutes.get(timeBeanId);
-			throw new RuntimeException("There is no route!");
+			
+			if(trRoutes==null)
+				throw new RuntimeException("There is no route!");
 		}
 		return trRoutes;
 	}

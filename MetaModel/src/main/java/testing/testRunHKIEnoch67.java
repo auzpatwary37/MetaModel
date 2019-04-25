@@ -29,6 +29,7 @@ import dynamicTransitRouter.fareCalculators.UniformFareCalculator;
 import dynamicTransitRouter.fareCalculators.ZonalFareXMLParserV2;
 import dynamicTransitRouter.transfer.BusMinibusTransferDiscount;
 import dynamicTransitRouter.transfer.TransferDiscountCalculator;
+import ust.hk.praisehk.metamodelcalibration.Utils.ModalToMATSim;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModelSubPop;
 import ust.hk.praisehk.metamodelcalibration.calibrator.ParamReader;
 
@@ -188,7 +189,7 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getLanes(), 
 			scenario.getTransitSchedule(), scenario, fareCalculator, tdc, 0.7, false);
 	anaModel.generateMATSimRoutes(0.7, 2, 10);
-	anaModel.assignRoutesToMATSimPopulation(scenario.getPopulation(), 0.7, false);
+	new ModalToMATSim(anaModel, scenario).assignRoutesToMATSimPopulation(scenario.getPopulation(), 0.7, false);
 	System.out.println("wait!!!!");
 	// Add the signal module to the controller
 	//Signals.configure(controler);

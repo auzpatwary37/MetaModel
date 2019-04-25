@@ -91,6 +91,14 @@ public class ITransitRoute implements AnalyticalModelTransitRoute {
 		this.destinationCoord = toCoord;
 	}
 	
+	public Coord getOriginCoord() {
+		return originCoord;
+	}
+
+	public Coord getDestinationCoord() {
+		return destinationCoord;
+	}
+
 	/**
 	 * It is a helper function to obtain the ID given the path in the transit network.
 	 * Also, it would set up the trips variable
