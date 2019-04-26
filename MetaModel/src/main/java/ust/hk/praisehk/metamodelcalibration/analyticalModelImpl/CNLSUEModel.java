@@ -1491,7 +1491,9 @@ public class CNLSUEModel implements AnalyticalModel{
  */
 	public void singleTimeBeanTA(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId,double defaultModeRatio) throws InterruptedException, ExecutionException {
 		boolean shouldStop=false;
+		boolean carConverged = false;
 		HashMap<Id<TransitLink>, Double> linkTransitVolume = new HashMap<>();
+		Map<Id<Link>, Map<Id<Link>, Double>> linkToLinkCarVolume = new HashMap<>();
 		for(int i=1;i<500;i++) {
 //			int[] iter = {i};
 //		    CompletableFuture<Map<Id<Link>, Map<Id<Link>, Double>>> carLoad = 
@@ -1501,14 +1503,16 @@ public class CNLSUEModel implements AnalyticalModel{
 //		    CompletableFuture<HashMap<Id<TransitLink>, Double>> transitLoad2 = 
 //		    		CompletableFuture.supplyAsync(() -> performParallelTransitNetworkLoading(timeBeanId,iter[0],params,anaParams));
 			
-			Map<Id<Link>, Map<Id<Link>, Double>> linkToLinkCarVolume = performParallelLinkToLinkCarNetworkLoading(timeBeanId,i,params,anaParams);
-			//HashMap<Id<TransitLink>, Double> linkTransitVolume = transitLoad2.get();
-			linkTransitVolume.clear();
-			shouldStop = this.checkConvergence(convertl2lToLink(linkToLinkCarVolume), linkTransitVolume, timeBeanId,i);
-			this.updateLinkToLinkVolume(linkToLinkCarVolume, linkTransitVolume, i, timeBeanId);
-			
+			if(!carConverged) {
+				linkToLinkCarVolume = performParallelLinkToLinkCarNetworkLoading(timeBeanId,i,params,anaParams);
+				//HashMap<Id<TransitLink>, Double> linkTransitVolume = transitLoad2.get();
+				linkTransitVolume.clear();
+				shouldStop = this.checkConvergence(convertl2lToLink(linkToLinkCarVolume), linkTransitVolume, timeBeanId,i);
+				this.updateLinkToLinkVolume(linkToLinkCarVolume, linkTransitVolume, i, timeBeanId);
+			}
 			linkTransitVolume = performParallelTransitNetworkLoading(timeBeanId,i,params,anaParams);
 			if(shouldStop) {
+				carConverged = true;
 				shouldStop = this.checkConvergence(convertl2lToLink(linkToLinkCarVolume), linkTransitVolume, timeBeanId,i);
 			}
 			updateTransitVolume(linkTransitVolume, i, timeBeanId);
