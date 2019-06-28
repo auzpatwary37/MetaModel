@@ -15,8 +15,6 @@ import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
-
-
 public class SimpleOptimizationFunction extends OptimizationFunction{
 	private final String metaModelType;
 	private final String type;
@@ -136,10 +134,10 @@ public class SimpleOptimizationFunction extends OptimizationFunction{
 		double objective=0;
 		Measurements metaMeasurements=this.getRealData().clone();
 		for(Measurement m:this.getRealData().getMeasurements().values()) {
-			for(String timeBean:m.getVolumes().keySet()) {
-				double AnaLyticalModelLinkCount=anaMeasurements.getMeasurements().get(m.getId()).getVolumes().get(timeBean);
+			for(String timeBean:m.getValidTimeBeans()) {
+				double AnaLyticalModelLinkCount=anaMeasurements.getVolumes(m.getId()).get(timeBean);
 				MetaModel metaModel=this.getMetaModels().get(m.getId()).get(timeBean);
-				metaMeasurements.getMeasurements().get(m.getId()).addVolume(timeBean, metaModel.calcMetaModel(AnaLyticalModelLinkCount, params));
+				metaMeasurements.addVolume(m.getId(), timeBean, metaModel.calcMetaModel(AnaLyticalModelLinkCount, params));
 			}
 		}
 		

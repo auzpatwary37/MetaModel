@@ -1,6 +1,5 @@
 package ust.hk.praisehk.metamodelcalibration.matsimIntegration;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,14 +22,9 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
+import transitCalculatorsWithFare.TransitFareHandler;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
-import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementsWriter;
-
-
-
-
-
 
 public class AnaModelControlerListener implements StartupListener,BeforeMobsimListener, AfterMobsimListener,IterationEndsListener, ShutdownListener{
 	private boolean generateOD=true;
@@ -46,11 +40,17 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 	@Inject
 	private @Named("CurrentParam") paramContainer currentParam;
 	
+	@Inject
+	private TransitFareHandler transitFares;
+	
 	private int maxIter;
 	private final Map<String, FareCalculator> farecalc;
+	private double busFareCollected;
 	private int AverageCountOverNoOfIteration=5;
 	private boolean shouldAverageOverIteration=true;
 	private Map<String, Map<Id<Link>, Double>> counts=null;
+	
+	@Inject	private EventsManager eventsManager;
 	
 	@Inject
 	public AnaModelControlerListener(Scenario scenario,AnalyticalModel sueAssignment, 
@@ -62,11 +62,6 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 		this.generateOD=generateRoutesAndOD;
 		this.storage=storage;
 	}
-	
-	@Inject
-	private EventsManager eventsManager;
-	
-	
 	
 	@Override
 	public void notifyStartup(StartupEvent event) {
@@ -83,34 +78,39 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 	public void notifyAfterMobsim(AfterMobsimEvent event) {
 		if(this.shouldAverageOverIteration) {
 			int counter=event.getIteration();
-			if(counter>this.maxIter-5) {
+			if(counter>this.maxIter-5) { //If it is final iterations
 				if(this.counts==null) {
-					counts=new HashMap<>(this.pcuVolumeCounter.geenerateLinkCounts());
+					counts=new HashMap<>(this.pcuVolumeCounter.geenerateLinkCounts()); //Store a value
 				}else {
 					Map<String,Map<Id<Link>,Double>> newcounts=this.pcuVolumeCounter.geenerateLinkCounts();
 					for(String s:this.counts.keySet()) {
 						for(Id<Link> lId:this.counts.get(s).keySet()) {
-							counts.get(s).put(lId, counts.get(s).get(lId)+newcounts.get(s).get(lId));
+							counts.get(s).put(lId, counts.get(s).get(lId)+newcounts.get(s).get(lId)); //or add it
 						}
 					}
+					busFareCollected += transitFares.getBusFareCollected().doubleValue();
 				}
 			}
 			if(counter==this.maxIter) {
+				//finally divide it by the number of iterations
 				for(String s:this.counts.keySet()) {
 					for(Id<Link> lId:this.counts.get(s).keySet()) {
 						counts.get(s).put(lId, counts.get(s).get(lId)/this.AverageCountOverNoOfIteration);
 					}
 				}
+				busFareCollected /= this.AverageCountOverNoOfIteration;
 				Measurements m=storage.getCalibrationMeasurements().clone();
-				m.updateMeasurements(counts);
+				m.updateMeasurements(counts); //Store the counts to the measurement object.
+				m.updateBusProfit(busFareCollected);
 				//new MeasurementsWriter(m).write();
 				this.storage.storeMeasurements(this.currentParam.getParam(), m);
 			}
 		}else {
-		int counter=event.getIteration();
+			int counter=event.getIteration();
 			if(counter==this.maxIter) {
 				Measurements m=storage.getCalibrationMeasurements().clone();
 				m.updateMeasurements(this.pcuVolumeCounter.geenerateLinkCounts());
+				m.updateBusProfit(transitFares.getBusFareCollected().doubleValue());
 				//m.writeCSVMeasurements(fileLoc);
 				this.storage.storeMeasurements(this.currentParam.getParam(), m);
 			}
@@ -129,13 +129,11 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 	@Override
 	public void notifyShutdown(ShutdownEvent event) {
 		if(this.generateOD) {
-		this.SueAssignment.generateRoutesAndOD(event.getServices().getScenario().getPopulation(),
-				event.getServices().getScenario().getNetwork(),
-				event.getServices().getScenario().getTransitSchedule(),
-				event.getServices().getScenario(), this.farecalc);
-		}	
-
-		
+			this.SueAssignment.generateRoutesAndOD(event.getServices().getScenario().getPopulation(),
+					event.getServices().getScenario().getNetwork(),
+					event.getServices().getScenario().getTransitSchedule(),
+					event.getServices().getScenario(), this.farecalc);
+		}
 	}
 
 	public int getAverageCountOverNoOfIteration() {

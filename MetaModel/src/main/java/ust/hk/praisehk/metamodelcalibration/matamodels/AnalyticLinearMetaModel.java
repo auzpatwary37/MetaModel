@@ -42,7 +42,7 @@ public class AnalyticLinearMetaModel extends MetaModelImpl {
 		
 		super(measurementId,SimData,paramsToCalibrate,timeBeanId,currentParamNo);
 		for(Entry<Integer,Measurements> e:AnalyticalData.entrySet()) {
-			this.analyticalData.put(e.getKey(),e.getValue().getMeasurements().get(this.measurementId).getVolumes().get(timeBeanId));
+			this.analyticalData.put(e.getKey(),e.getValue().getVolumes(this.measurementId).get(timeBeanId));
 			
 		}
 		this.noOfMetaModelParams=this.noOfParams+2;

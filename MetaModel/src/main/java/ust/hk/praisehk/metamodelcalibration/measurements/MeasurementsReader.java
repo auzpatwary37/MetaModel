@@ -39,12 +39,12 @@ public class MeasurementsReader extends DefaultHandler {
 				this.m=Measurements.createMeasurements(this.timeBeans);
 			}
 			this.mId=Id.create(attributes.getValue("MeasurementId"), Measurement.class);
-			this.m.createAnadAddMeasurement(mId.toString());
+			this.m.createAnadAddLinkMeasurement(mId.toString());
 		}
 		
 		if(qName.equalsIgnoreCase("Coord")) {
 			Coord coord=new Coord(Double.parseDouble(attributes.getValue("X")),Double.parseDouble(attributes.getValue("Y")));
-			this.m.getMeasurements().get(this.mId).setCoord(coord);
+			((LinkMeasurement) this.m.getMeasurements().get(this.mId)).setCoord(coord);
 		}
 		
 		if(qName.equalsIgnoreCase("linkIds")) {
@@ -56,16 +56,15 @@ public class MeasurementsReader extends DefaultHandler {
 		}
 		
 		if(qName.equalsIgnoreCase("Volume")) {
-			this.m.getMeasurements().get(this.mId).addVolume(attributes.getValue("TimeBeanId"), Double.parseDouble(attributes.getValue("PCUVolume")));
+			((LinkMeasurement) this.m.getMeasurements().get(this.mId)).addVolume(attributes.getValue("TimeBeanId"), Double.parseDouble(attributes.getValue("PCUVolume")));
 		}
 		
 	}
 	
 	@Override 
 	public void endElement(String uri, String localName, String qName) {
-		
 		if(qName.equalsIgnoreCase("linkIds")) {
-			this.m.getMeasurements().get(this.mId).setAttribute(Measurement.linkListAttributeName, linkIds);
+			((LinkMeasurement) this.m.getMeasurements().get(this.mId)).setAttribute(LinkMeasurement.linkListAttributeName, linkIds);
 		}
 	}
 	

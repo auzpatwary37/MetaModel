@@ -26,10 +26,10 @@ import org.matsim.core.utils.collections.Tuple;
  */
 public class Measurements {
 	
-	
-	
 	private final Map<String,Tuple<Double,Double>> timeBean;
 	private Map<Id<Measurement>,Measurement> measurements=new HashMap<>();
+	
+	private double busProfit;
 	
 	private Measurements(Map<String,Tuple<Double,Double>> timeBean) {
 		this.timeBean=timeBean;
@@ -39,8 +39,8 @@ public class Measurements {
 		return new Measurements(timeBean);
 	}
 	
-	public void createAnadAddMeasurement(String measurementId) {
-		Measurement m=new Measurement(measurementId,this.timeBean);
+	public void createAnadAddLinkMeasurement(String measurementId) {
+		Measurement m=new LinkMeasurement(measurementId,this.timeBean);
 		this.measurements.put(m.getId(), m);
 	}
 	
@@ -57,9 +57,38 @@ public class Measurements {
 	}
 	
 	/**
+	 * Get the volumes for the measurement of linkMeasurement
+	 * @param m The Id of the measurement we want
+	 * @return
+	 */
+	public Map<String,Double> getVolumes(Id<Measurement> mId){
+		
+		Map<String,Double> volumes = ((LinkMeasurement) measurements.get(mId)).getVolumes();
+		if(volumes == null) {
+			throw new RuntimeException("The volumes is null!");
+		}
+		return volumes;
+	}
+	
+	/**
+	 * It put a volume inside the measurement
+	 * @param mId
+	 * @param timeBeanId
+	 * @param volume
+	 */
+	public void addVolume(Id<Measurement> mId, String timeBeanId, double volume) {
+		((LinkMeasurement) measurements.get(mId)).addVolume(timeBeanId, volume);
+	}
+	
+	public double getBusProfit() {
+		return busProfit;
+	}
+	
+	/**
 	 * Will deep clone the measurement and provide a new measurement exactly same as the current measurement 
 	 * Modifying the current measurement will not affect the new created measurement and vise-versa The attributes are not deep copied
 	 */
+	@Override
 	public Measurements clone() {
 		Measurements m=new Measurements(this.timeBean);
 		for(Measurement mm: this.measurements.values()) {
@@ -70,8 +99,13 @@ public class Measurements {
 	
 	public void updateMeasurements(Map<String,Map<Id<Link>,Double>> linkVolumes) {
 		for(Measurement m:this.measurements.values()) {
-			m.updateMeasurement(linkVolumes);
+			if(m instanceof LinkMeasurement)
+				((LinkMeasurement) m).updateLinkVolumes(linkVolumes);
 		}
+	}
+	
+	public void updateBusProfit(double profit) {
+		this.busProfit = profit;
 	}
 	
 	/**
@@ -83,8 +117,11 @@ public class Measurements {
 		Set<Id<Link>>linkSet=new HashSet<>();
 		
 		for(Measurement m: this.measurements.values()) {
-			for(Id<Link>lId:(ArrayList<Id<Link>>)m.getAttribute(m.linkListAttributeName)) {
-				linkSet.add(lId);
+			if(m instanceof LinkMeasurement) {
+				LinkMeasurement lm = (LinkMeasurement) m;
+				for(Id<Link>lId:(ArrayList<Id<Link>>)lm.getAttribute(lm.linkListAttributeName)) {
+					linkSet.add(lId);
+				}
 			}
 		}
 		
@@ -96,8 +133,11 @@ public class Measurements {
 			FileWriter fw=new FileWriter(new File(fileLoc),false);
 			fw.append("MeasurementId,timeId,PCUCount\n");
 			for(Measurement m:this.measurements.values()) {
-				for(String timeId:m.getVolumes().keySet())
-				fw.append(m.getId().toString()+","+timeId+","+m.getVolumes().get(timeId)+"\n");
+				if(m instanceof LinkMeasurement) {
+					LinkMeasurement lm = (LinkMeasurement) m;
+					for(String timeId:lm.getVolumes().keySet())
+						fw.append(m.getId().toString()+","+timeId+","+lm.getVolumes().get(timeId)+"\n");
+				}
 			}
 			fw.flush();
 			fw.close();
@@ -107,6 +147,7 @@ public class Measurements {
 		}
 	}
 	
+	//TODO: Extend this function to allow other measurement
 	public void updateMeasurementsFromFile(String fileLoc) {
 		try {
 			BufferedReader bf=new BufferedReader(new FileReader(new File(fileLoc)));
@@ -116,10 +157,10 @@ public class Measurements {
 				String[] part=line.split(",");
 				Id<Measurement> measurementId=Id.create(part[0].trim(), Measurement.class);
 				if(!this.measurements.containsKey(measurementId)) {
-					this.createAnadAddMeasurement(measurementId.toString());
+					this.createAnadAddLinkMeasurement(measurementId.toString());
 				}
 				String timeBeanId=part[1].trim();
-				this.measurements.get(measurementId).addVolume(timeBeanId, Double.parseDouble(part[2].trim()));
+				((LinkMeasurement) this.measurements.get(measurementId)).addVolume(timeBeanId, Double.parseDouble(part[2].trim()));
 			}
 			bf.close();
 		} catch (FileNotFoundException e) {

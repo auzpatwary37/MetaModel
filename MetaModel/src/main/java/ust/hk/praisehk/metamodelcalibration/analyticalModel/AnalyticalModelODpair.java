@@ -68,7 +68,7 @@ public class AnalyticalModelODpair {
 	private Map<String,HashMap<Id<AnalyticalModelRoute>,Double>> routeUtility=new ConcurrentHashMap<>();
 	private Map<String,HashMap<Id<AnalyticalModelTransitRoute>, Double>> TrRouteUtility=new ConcurrentHashMap<>();
 	private final Map<String, Tuple<Double,Double>>timeBean;
-	private Map<String, ArrayList<AnalyticalModelTransitRoute>> timeBasedTransitRoutes=new ConcurrentHashMap<>();
+	private Map<String, ArrayList<AnalyticalModelTransitRoute>> timeBasedTransitRoutes=new HashMap<>();
 	private String subPopulation;
 	//private double PCU=1;
 	private int minRoute=5;
@@ -659,19 +659,24 @@ public class AnalyticalModelODpair {
 	 * @return
 	 */
 	public List<AnalyticalModelTransitRoute> getTrRoutes(Map<String, Tuple<Double, Double>> timeBeans,String timeBeanId, int iteration) {
-		//if(this.timeBasedTransitRoutes.size()==0) {
-		if(iteration == 1)
-			this.generateTimeBasedTransitRoutes(timeBeans); //Generate the transit routes based on the route set in the first iteration
-		//}
-		List<AnalyticalModelTransitRoute> trRoutes = this.timeBasedTransitRoutes.get(timeBeanId);
-		if(trRoutes == null) {
+		if(this.timeBasedTransitRoutes.size()==0) {
 			this.generateTimeBasedTransitRoutes(timeBeans);
-			trRoutes = this.timeBasedTransitRoutes.get(timeBeanId);
-			
-			if(trRoutes==null)
-				throw new RuntimeException("There is no route!");
 		}
-		return trRoutes;
+		return this.timeBasedTransitRoutes.get(timeBeanId);
+		
+		//if(this.timeBasedTransitRoutes.size()==0) {
+//		if(iteration == 1 || iteration == 0)
+//			this.generateTimeBasedTransitRoutes(timeBeans); //Generate the transit routes based on the route set in the first iteration
+//		//}
+//		List<AnalyticalModelTransitRoute> trRoutes = this.timeBasedTransitRoutes.get(timeBeanId);
+//		if(trRoutes == null) {
+//			this.generateTimeBasedTransitRoutes(timeBeans);
+//			trRoutes = this.timeBasedTransitRoutes.get(timeBeanId);
+//			
+//			if(trRoutes==null)
+//				throw new RuntimeException("There is no route in iteration"+iteration+"!");//It is usually a false alarm
+//		}
+//		return trRoutes;
 	}
 	
 	public List<AnalyticalModelTransitRoute> getTrRoutes(){

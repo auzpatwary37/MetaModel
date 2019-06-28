@@ -46,43 +46,46 @@ public class MeasurementsWriter extends DefaultHandler{
 			rootEle.appendChild(TimeBeans);
 			
 			for(Measurement mm:m.getMeasurements().values()) {
-				Element measurement=document.createElement("Measurement");
-				measurement.setAttribute("MeasurementId", mm.getId().toString());
-				if(mm.getCoord()!=null) {
-					Element Coord=document.createElement("Coord");
-					Coord.setAttribute("X", Double.toString(mm.getCoord().getX()));
-					Coord.setAttribute("Y", Double.toString(mm.getCoord().getY()));
-					measurement.appendChild(Coord);
-				}
-				Element Volumes=document.createElement("Volumes");
-				for(Entry<String,Double>e:mm.getVolumes().entrySet()) {
-					Element volume=document.createElement("Volume");
-					volume.setAttribute("TimeBeanId", e.getKey());
-					volume.setAttribute("PCUVolume", Double.toString(e.getValue()));
-					Volumes.appendChild(volume);
-				}
-				measurement.appendChild(Volumes);
-
-				Element linkIds=document.createElement("LinkIds");
-
-				if(mm.getAttribute(mm.linkListAttributeName)==null) {
-					Element lId=document.createElement("LinkId");
-					lId.setAttribute("Id", mm.getId().toString());
-					linkIds.appendChild(lId);
-				}else {
-					for(Id<Link>linkId:((ArrayList<Id<Link>>)mm.getAttribute(mm.linkListAttributeName))) {
-						Element lId=document.createElement("LinkId");
-						lId.setAttribute("Id", linkId.toString());
-						linkIds.appendChild(lId);
+				if(mm instanceof LinkMeasurement) { //TODO: Implement writing for other measurements
+					LinkMeasurement lm = (LinkMeasurement) mm;
+					Element measurement=document.createElement("Measurement");
+					measurement.setAttribute("MeasurementId", mm.getId().toString());
+					if(lm.getCoord()!=null) {
+						Element Coord=document.createElement("Coord");
+						Coord.setAttribute("X", Double.toString(lm.getCoord().getX()));
+						Coord.setAttribute("Y", Double.toString(lm.getCoord().getY()));
+						measurement.appendChild(Coord);
 					}
+					Element Volumes=document.createElement("Volumes");
+					for(Entry<String,Double>e:lm.getVolumes().entrySet()) {
+						Element volume=document.createElement("Volume");
+						volume.setAttribute("TimeBeanId", e.getKey());
+						volume.setAttribute("PCUVolume", Double.toString(e.getValue()));
+						Volumes.appendChild(volume);
+					}
+					measurement.appendChild(Volumes);
+	
+					Element linkIds=document.createElement("LinkIds");
+	
+					if(lm.getAttribute(lm.linkListAttributeName)==null) {
+						Element lId=document.createElement("LinkId");
+						lId.setAttribute("Id", mm.getId().toString());
+						linkIds.appendChild(lId);
+					}else {
+						for(Id<Link>linkId:((ArrayList<Id<Link>>)lm.getAttribute(lm.linkListAttributeName))) {
+							Element lId=document.createElement("LinkId");
+							lId.setAttribute("Id", linkId.toString());
+							linkIds.appendChild(lId);
+						}
+					}
+					measurement.appendChild(linkIds);
+					
+					for(String s:lm.getAttributes().keySet()) {
+						measurement.setAttribute(s, lm.getAttribute(s).toString());
+					}
+					
+					rootEle.appendChild(measurement);
 				}
-				measurement.appendChild(linkIds);
-				
-				for(String s:mm.getAttributes().keySet()) {
-					measurement.setAttribute(s, mm.getAttribute(s).toString());
-				}
-				
-				rootEle.appendChild(measurement);
 			}
 			document.appendChild(rootEle);
 			

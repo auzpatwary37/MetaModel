@@ -307,14 +307,12 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 		this.fareCalculator=fareCalculator;
 		
-		
-		this.carDemand.size();
-		
 		this.ts = transitSchedule;
 		for(String timeBeanId:this.timeBeans.keySet()) { //For every time bean
 			this.consecutiveSUEErrorIncrease.put(timeBeanId, 0.);
 			Map<Id<AnalyticalModelODpair>, Double> odDemandMap = this.odPairs.getDemand(timeBeanId); //TODO: A little bit strange
 			this.originalDemand.put(timeBeanId, new HashMap<>(odDemandMap)); //Add a hashMap for the time bean
+			this.demand.put(timeBeanId, new HashMap<>(odDemandMap)); //XXX: Not sure should I do or not.
 			for(Id<AnalyticalModelODpair> odId : odDemandMap.keySet()) {
 				double totalDemand = odDemandMap.get(odId);
 				if(this.odPairs.getODpairset().get(odId).getTrRoutes().isEmpty()) {
@@ -798,12 +796,13 @@ public class CNLSUEModel implements AnalyticalModel{
 	}
 	/**
 	 * This method resets all the car demand 
+	 * Notice that the originalDemand is using here, as it is a fixed one.
 	 */
 	private void resetCarDemand() {
 		for(String timeId:this.timeBeans.keySet()) {
 			this.carDemand.put(timeId, new HashMap<Id<AnalyticalModelODpair>, Double>());
-			for(Id<AnalyticalModelODpair> o : this.demand.get(timeId).keySet()) {
-				this.carDemand.get(timeId).put(o, this.demand.get(timeId).get(o)*0.5);
+			for(Id<AnalyticalModelODpair> o : this.originalDemand.get(timeId).keySet()) {
+				this.carDemand.get(timeId).put(o, this.originalDemand.get(timeId).get(o)*0.5);
 			}
 
 		}

@@ -78,9 +78,9 @@ public class InternalParamCalibratorFunction implements Calcfc{
 					anaMeasurement.updateMeasurements(anaCount);
 					Measurements simMeasurement=this.simMeasurements.get(i);
 					for(Id<Measurement> mId:simMeasurement.getMeasurements().keySet()) {
-						for(String s:simMeasurement.getMeasurements().get(mId).getVolumes().keySet()) {
-							double simValue=simMeasurement.getMeasurements().get(mId).getVolumes().get(s);
-							double anaValue=anaMeasurement.getMeasurements().get(mId).getVolumes().get(s);
+						for(String s:simMeasurement.getVolumes(mId).keySet()) {
+							double simValue=simMeasurement.getVolumes(mId).get(s);
+							double anaValue=anaMeasurement.getVolumes(mId).get(s);
 							double a=simValue-anaValue;
 							double weight=1/(1+this.calcEucleadeanDistance(this.currentParam, param));
 							objective+=weight*Math.pow(a, 2);

@@ -24,13 +24,24 @@ public class AnaModelCalibrationModule extends AbstractModule{
 		this.sueAssignment=sueAssignment;
 		this.fileLoc=FileLoc;
 		}	
-	public AnaModelCalibrationModule(MeasurementsStorage countData,AnalyticalModel sueAssignment,String FileLoc,LinkedHashMap<String,Double> currentParam,boolean generateRouteAndOD) {
+	
+	/**
+	 * Initialize the analytical model calibration module
+	 * @param countData An MeasurementsStorage object of all the measurements needed
+	 * @param sueAssignment The analyticalmodel
+	 * @param FileLoc The location to save the files
+	 * @param currentParam The parameter set input
+	 * @param generateRouteAndOD generate route and OD or not
+	 */
+	public AnaModelCalibrationModule(MeasurementsStorage countData,AnalyticalModel sueAssignment,String FileLoc,
+			LinkedHashMap<String,Double> currentParam,boolean generateRouteAndOD) {
 		this.storage=countData;
 		this.sueAssignment=sueAssignment;
 		this.fileLoc=FileLoc;
 		this.generateRoutesAndOD=generateRouteAndOD;
 		this.currentParam=new paramContainer(currentParam);
 		}
+	
 	
 	public void install() {
 		bind(MeasurementsStorage.class).toInstance(this.storage);

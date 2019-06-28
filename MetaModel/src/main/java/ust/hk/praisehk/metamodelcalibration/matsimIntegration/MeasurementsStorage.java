@@ -18,7 +18,6 @@ import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
  * @author h
  *
  */
-
 public class MeasurementsStorage {
 	private Map<String,Measurements> linkCounts=new ConcurrentHashMap<>();
 	private final Measurements calibrationMeasurements;

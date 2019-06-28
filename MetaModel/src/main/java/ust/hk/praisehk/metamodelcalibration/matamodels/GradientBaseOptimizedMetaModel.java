@@ -64,12 +64,12 @@ public class GradientBaseOptimizedMetaModel extends MetaModelImpl{
 			this.currentSimIter=currentIter;
 			this.iterBasedIncreasingCost=this.currentSimIter/(1+this.currentSimIter)*c;
 			for(Entry<Integer,Measurements> e:AnalyticalData.entrySet()) {
-				this.analyticalData.put(e.getKey(),e.getValue().getMeasurements().get(this.measurementId).getVolumes().get(timeBeanId));
+				this.analyticalData.put(e.getKey(),e.getValue().getVolumes(this.measurementId).get(timeBeanId));
 				
 			}
 			
 			//this.currentParam=currentParam;
-			this.metaParamShouldBe[0]=SimData.get(currentParamNo).getMeasurements().get(this.measurementId).getVolumes().get(timeBeanId)-AnalyticalData.get(currentParamNo).getMeasurements().get(this.measurementId).getVolumes().get(timeBeanId);
+			this.metaParamShouldBe[0]=SimData.get(currentParamNo).getVolumes(this.measurementId).get(timeBeanId)-AnalyticalData.get(currentParamNo).getVolumes(this.measurementId).get(timeBeanId);
 			
 			
 			int i=1;

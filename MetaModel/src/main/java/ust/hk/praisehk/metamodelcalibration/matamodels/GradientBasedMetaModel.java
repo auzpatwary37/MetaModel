@@ -35,7 +35,7 @@ public class GradientBasedMetaModel implements MetaModel{
 		this.metaParams=new double[paramsToCalibrate.get(currentParamNo).size()+1];
 		this.timeBeanId=timeBeanId;
 		//this.currentParam=currentParam;
-		metaParams[0]=SimData.get(currentParamNo).getMeasurements().get(this.measurementId).getVolumes().get(timeBeanId)-AnalyticalData.get(currentParamNo).getMeasurements().get(this.measurementId).getVolumes().get(timeBeanId);
+		metaParams[0]=SimData.get(currentParamNo).getVolumes(this.measurementId).get(timeBeanId)-AnalyticalData.get(currentParamNo).getVolumes(this.measurementId).get(timeBeanId);
 		int i=1;
 		for(String s:SimGradient.keySet()) {
 			metaParams[i]=SimGradient.get(s)-anaGradient.get(s);

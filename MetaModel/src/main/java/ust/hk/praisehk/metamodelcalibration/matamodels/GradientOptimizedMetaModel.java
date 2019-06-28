@@ -26,7 +26,7 @@ public class GradientOptimizedMetaModel extends MetaModelImpl{
 		this.simGrad=SimGradient;
 		this.anaGrad=anaGradient;
 		for(Integer i:anaData.keySet()) {
-			this.anaData.put(i,anaData.get(i).getMeasurements().get(this.measurementId).getVolumes().get(timeBeanId));
+			this.anaData.put(i,anaData.get(i).getVolumes(this.measurementId).get(timeBeanId));
 		}
 		this.noOfMetaModelParams=this.params.get(currentParamIterNo).size()+2;
 		this.MetaModelParams=new double[this.noOfMetaModelParams];

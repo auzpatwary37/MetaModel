@@ -26,8 +26,11 @@ import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.population.routes.RouteUtils;
+import org.matsim.core.router.ActivityWrapperFacility;
 import org.matsim.core.router.TeleportationRoutingModule;
 import org.matsim.core.utils.collections.Tuple;
+import org.matsim.facilities.ActivityFacilities;
+import org.matsim.facilities.ActivityFacility;
 import org.matsim.facilities.FacilitiesUtils;
 import org.matsim.facilities.Facility;
 import org.matsim.pt.PtConstants;
@@ -229,8 +232,10 @@ public class ModalToMATSim {
 										thisAct.getCoord(), lastLegtimeBin);
 								if(transitRouteFound!= null) {
 									p.getPlanElements().remove(i-1);
-									p.getPlanElements().addAll(i-1, fillWithActivities(transitRouteFound, FacilitiesUtils.wrapActivity(lastActivity), 
-											FacilitiesUtils.wrapActivity(thisAct), lastLeg.getDepartureTime(), null));
+									Facility fromFacility = new ActivityWrapperFacility( lastActivity ) ;
+									Facility toFacility = new ActivityWrapperFacility( thisAct ) ;
+									p.getPlanElements().addAll(i-1, fillWithActivities(transitRouteFound, fromFacility, 
+											toFacility, lastLeg.getDepartureTime(), null));
 									i+= ( (transitRouteFound.size()-1) *2);
 									ptAssignedCount.incrementAndGet();
 								}

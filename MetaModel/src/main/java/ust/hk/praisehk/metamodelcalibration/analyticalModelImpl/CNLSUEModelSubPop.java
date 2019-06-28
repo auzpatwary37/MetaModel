@@ -149,6 +149,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		for(String timeBeanId:this.getTimeBeans().keySet()) {
 			this.consecutiveSUEErrorIncrease.put(timeBeanId, 0.);
 			this.originalDemand.put(timeBeanId, new HashMap<>(this.odPairs.getDemand(timeBeanId)));
+			this.demand.put(timeBeanId, new HashMap<>(this.odPairs.getDemand(timeBeanId))); //The demand is also the same, fixed
 			for(Id<AnalyticalModelODpair> odId:this.originalDemand.get(timeBeanId).keySet()) {
 				double totalDemand=this.originalDemand.get(timeBeanId).get(odId);
 				this.carDemand.get(timeBeanId).put(odId, 0.5*totalDemand);

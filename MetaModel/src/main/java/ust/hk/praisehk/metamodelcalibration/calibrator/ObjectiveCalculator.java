@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 
 import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
+import ust.hk.praisehk.metamodelcalibration.measurements.LinkMeasurement;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
@@ -25,10 +26,41 @@ public class ObjectiveCalculator {
 	public static final String TypeMeasurementAndTimeSpecific="MeasurementAndTimeSpecific";
 	public static final Logger logger=Logger.getLogger(ObjectiveCalculator.class);
 	public static final String Type=TypeMeasurementAndTimeSpecific;
+	
 	/**
-	 * 
-	 * @param realMeasurements
-	 * @param simOrAnaMeasurement
+	 * It is just the flow of few stations with AADT.
+	 * @param simOrAnaMeasurements
+	 * @return
+	 */
+	public static double calcFlowObjective(Measurements simOrAnaMeasurements) {
+		double objective=0;
+		double stationCountAnaOrSim=0;
+		for(Measurement m:simOrAnaMeasurements.getMeasurements().values()) {
+			if(m instanceof LinkMeasurement) {
+				LinkMeasurement lm = (LinkMeasurement) m;
+				for(String timeBeanId:lm.getVolumes().keySet()) {
+					stationCountAnaOrSim+= ((LinkMeasurement) simOrAnaMeasurements.getMeasurements().get(lm.getId())).
+							getVolumes().get(timeBeanId);
+				}
+				objective+=stationCountAnaOrSim;
+			}
+		}
+		return objective;
+	}
+	
+	/**
+	 * Objective function 2: The fares
+	 * @param simOrAnaMeasurements
+	 * @return
+	 */
+	public static double calcFareObjective(Measurements simOrAnaMeasurements) {
+		return 0.0;
+	}
+	
+	/**
+	 * TODO: Add some more types of the objective
+	 * @param realMeasurements The real measurements from the file (?)
+	 * @param simOrAnaMeasurement The simulation or analytical model measurements
 	 * @param Type: AADT or linkAnadTimeSpecific(default)
 	 * @return
 	 */
@@ -38,33 +70,41 @@ public class ObjectiveCalculator {
 			double stationCountReal=0;
 			double stationCountAnaOrSim=0;
 			for(Measurement m:realMeasurements.getMeasurements().values()) {
-				for(String timeBeanId:m.getVolumes().keySet()) {
-					if(simOrAnaMeasurements.getMeasurements().get(m.getId())==null) {
-						logger.error("The Measurements entered are not comparable (measuremtn do not match)!!! This should not happen. Please check");
+				if(m instanceof LinkMeasurement) {
+					LinkMeasurement lm = (LinkMeasurement) m;
+					for(String timeBeanId:lm.getVolumes().keySet()) {
+						LinkMeasurement simLm = (LinkMeasurement) simOrAnaMeasurements.getMeasurements().get(m.getId());
+						if(simLm==null) {
+							logger.error("The Measurements entered are not comparable (measurement do not match)!!! This should not happen. Please check");
+							
+						}else if(simLm.getVolumes().get(timeBeanId)==null) {
+							logger.error("The Measurements entered are not comparable (volume timeBeans do not match)!!! This should not happen. Please check");
+							
+						}
 						
-					}else if(simOrAnaMeasurements.getMeasurements().get(m.getId()).getVolumes().get(timeBeanId)==null) {
-						logger.error("The Measurements entered are not comparable (volume timeBeans do not match)!!! This should not happen. Please check");
-						
+						stationCountReal+=lm.getVolumes().get(timeBeanId);
+						stationCountAnaOrSim+=simLm.getVolumes().get(timeBeanId);
 					}
-					
-					stationCountReal+=m.getVolumes().get(timeBeanId);
-					stationCountAnaOrSim+=simOrAnaMeasurements.getMeasurements().get(m.getId()).getVolumes().get(timeBeanId);
+					objective+=Math.pow((stationCountReal-stationCountAnaOrSim),2);
 				}
-				objective+=Math.pow((stationCountReal-stationCountAnaOrSim),2);
 			}
 			
 		}else {
 			for(Measurement m:realMeasurements.getMeasurements().values()) {
-				for(String timeBeanId:m.getVolumes().keySet()) {
-					if(simOrAnaMeasurements.getMeasurements().get(m.getId())==null) {
-						logger.error("The Measurements entered are not comparable (measuremtn do not match)!!! This should not happen. Please check");
+				if(m instanceof LinkMeasurement) {
+					LinkMeasurement lm = (LinkMeasurement) m;
+					for(String timeBeanId:lm.getVolumes().keySet()) {
+						LinkMeasurement simLm = (LinkMeasurement) simOrAnaMeasurements.getMeasurements().get(m.getId());
+						if(simLm==null) {
+							logger.error("The Measurements entered are not comparable (measuremtn do not match)!!! This should not happen. Please check");
+							
+						}else if(simLm.getVolumes().get(timeBeanId)==null) {
+							logger.error("The Measurements entered are not comparable (volume timeBeans do not match)!!! This should not happen. Please check");
+							
+						}
 						
-					}else if(simOrAnaMeasurements.getMeasurements().get(m.getId()).getVolumes().get(timeBeanId)==null) {
-						logger.error("The Measurements entered are not comparable (volume timeBeans do not match)!!! This should not happen. Please check");
-						
+						objective+=Math.pow((lm.getVolumes().get(timeBeanId)-simLm.getVolumes().get(timeBeanId)),2);
 					}
-					
-					objective+=Math.pow((m.getVolumes().get(timeBeanId)-simOrAnaMeasurements.getMeasurements().get(m.getId()).getVolumes().get(timeBeanId)),2);
 				}
 			}
 			
@@ -76,8 +116,12 @@ public class ObjectiveCalculator {
 	public static double calcObjective(Measurements realMeasurements,Measurements anaMeasurements,Map<Id<Measurement>,Map<String,MetaModel>>metaModels,LinkedHashMap<String,Double>param,String Type) {
 		Measurements metaMeasurements=realMeasurements.clone();
 		for(Measurement m:realMeasurements.getMeasurements().values()) {
-			for(String timeBeanid:m.getVolumes().keySet()) {
-				metaMeasurements.getMeasurements().get(m.getId()).addVolume(timeBeanid, metaModels.get(m.getId()).get(timeBeanid).calcMetaModel(anaMeasurements.getMeasurements().get(m.getId()).getVolumes().get(timeBeanid), param));
+			if(m instanceof LinkMeasurement) {
+				LinkMeasurement lm = (LinkMeasurement) m;
+				for(String timeBeanid:lm.getVolumes().keySet()) {
+					((LinkMeasurement) metaMeasurements.getMeasurements().get(m.getId())).
+					addVolume(timeBeanid, metaModels.get(m.getId()).get(timeBeanid).calcMetaModel( ((LinkMeasurement)anaMeasurements.getMeasurements().get(m.getId())).getVolumes().get(timeBeanid), param));
+				}
 			}
 		}
 		return calcObjective(realMeasurements,metaMeasurements,Type);

@@ -150,7 +150,7 @@ public class CalibratorImpl implements Calibrator {
 				this.oldMetaModel.put(m.getId(), this.metaModels.get(m.getId()));
 			}
 			this.metaModels.put(m.getId(), new HashMap<String,MetaModel>());
-			for(String timeBeanId:m.getVolumes().keySet()) {
+			for(String timeBeanId : m.getValidTimeBeans()) {
 
 				MetaModel metaModel;
 				
@@ -214,7 +214,7 @@ public class CalibratorImpl implements Calibrator {
 		this.params.put(this.iterationNo, this.trialParam);
 		boolean accepted=true;
 		if(this.iterationNo==0) {
-			String s="0th Objective Value = "+ObjectiveCalculator.calcObjective(calibrationMeasurements, simMeasurements, this.ObjectiveType);
+			String s="0th Objective Value = "+ObjectiveCalculator.calcObjective(calibrationMeasurements, simMeasurements, this.ObjectiveType); //TODO: Check here.
 			System.out.println(s);
 			try {
 				FileWriter fw=new FileWriter(new File("toyScenarioLarge/Calibration/0thSimObjective.txt"));
@@ -327,11 +327,10 @@ public class CalibratorImpl implements Calibrator {
 			FileWriter fw=new FileWriter(new File(fileLoc+"Comparison"+this.iterationNo+".csv"),false);
 			fw.append("MeasurementId,timeBeanId,RealCount,currentSimCount,trialSimCount\n");
 			for(Measurement m: this.calibrationMeasurements.getMeasurements().values()) {
-				for(String timeBean:m.getVolumes().keySet()) {
-					
-					fw.append(m.getId()+","+timeBean+","+this.calibrationMeasurements.getMeasurements().get(m.getId()).getVolumes().get(timeBean)+","+
-				this.simMeasurements.get(this.currentParamNo).getMeasurements().get(m.getId()).getVolumes().get(timeBean)+","+this.simMeasurements.get(this.iterationNo).getMeasurements().get(m.getId()).getVolumes().get(timeBean)+"\n");
-					}
+				for(String timeBean:m.getValidTimeBeans()) {
+					fw.append(m.getId()+","+timeBean+","+this.calibrationMeasurements.getVolumes(m.getId()).get(timeBean)+","+
+							this.simMeasurements.get(this.currentParamNo).getVolumes(m.getId()).get(timeBean)+","+this.simMeasurements.get(this.iterationNo).getVolumes(m.getId()).get(timeBean)+"\n");
+				}
 			}
 		fw.flush();
 		fw.close();
@@ -345,8 +344,8 @@ public class CalibratorImpl implements Calibrator {
 	private Measurements CalcMetaModelPrediction(int iterNo) {
 		Measurements metaModelMeasurements=this.calibrationMeasurements.clone();
 		for(Measurement m: this.calibrationMeasurements.getMeasurements().values()) {
-			for(String timeBeanId:m.getVolumes().keySet()) {
-				metaModelMeasurements.getMeasurements().get(m.getId()).addVolume(timeBeanId, this.metaModels.get(m.getId()).get(timeBeanId).calcMetaModel(this.anaMeasurements.get(iterNo).getMeasurements().get(m.getId()).getVolumes().get(timeBeanId), this.params.get(iterNo)));
+			for(String timeBeanId:m.getValidTimeBeans()) {
+				metaModelMeasurements.addVolume(m.getId(), timeBeanId, this.metaModels.get(m.getId()).get(timeBeanId).calcMetaModel(this.anaMeasurements.get(iterNo).getVolumes(m.getId()).get(timeBeanId), this.params.get(iterNo)));
 			}
 		}
 		return metaModelMeasurements;
