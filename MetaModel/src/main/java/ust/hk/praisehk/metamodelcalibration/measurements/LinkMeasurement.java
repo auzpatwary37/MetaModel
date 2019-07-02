@@ -112,6 +112,11 @@ public class LinkMeasurement extends Measurement{
 						throw new IllegalArgumentException("linkVolumes does not contain volume information");
 					}
 					if(linkVolumes.get(s).get(linkId)==null) {
+						Id<Link> newLinkId = Id.createLinkId(linkId.toString().replaceAll(" ", ""));
+						if(linkVolumes.get(s).get(newLinkId)!=null) {
+							volume+=linkVolumes.get(s).get(newLinkId);
+							continue;
+						}
 						throw new IllegalArgumentException("linkVolumes does not contain volume information");
 					}
 					volume+=linkVolumes.get(s).get(linkId);

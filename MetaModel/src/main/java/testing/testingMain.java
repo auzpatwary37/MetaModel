@@ -23,7 +23,7 @@ import dynamicTransitRouter.fareCalculators.LRFareCalculator;
 import dynamicTransitRouter.fareCalculators.MTRFareCalculator;
 import dynamicTransitRouter.fareCalculators.UniformFareCalculator;
 import dynamicTransitRouter.fareCalculators.ZonalFareXMLParserV2;
-import dynamicTransitRouter.transfer.BusMinibusTransferDiscount;
+import dynamicTransitRouter.transfer.AllPTTransferDiscount;
 import dynamicTransitRouter.transfer.TransferDiscountCalculator;
 import ust.hk.praisehk.metamodelcalibration.Utils.ModalToMATSim;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModel;
@@ -68,7 +68,7 @@ public class testingMain {
 		fareCalculator.put("train",new LRFareCalculator("fare/light_rail_fares.csv"));
 		
 		CNLSUEModel anaModel=new CNLSUEModel(config,timeBean);
-		TransferDiscountCalculator tdc = new BusMinibusTransferDiscount("fare/GMB.csv");
+		TransferDiscountCalculator tdc = new AllPTTransferDiscount("fare/transitDiscount.json");
 		anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getLanes(), 
 				scenario.getTransitSchedule(), scenario, fareCalculator, tdc, 0.7, false);
 		anaModel.generateMATSimRoutes(0.7, 30, 10);

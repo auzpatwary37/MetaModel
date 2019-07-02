@@ -975,7 +975,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		
 		//This part is added by Enoch in order to update the linkflow well
 		HashMap<Id<TransitLink>,Double> linkFlows=new HashMap<>();
-		if(routes!=null && routes.get(0) instanceof ITransitRoute) {
+		if(routes!=null && !routes.isEmpty() && routes.get(0) instanceof ITransitRoute) {
 			for(Id<AnalyticalModelTransitRoute> routeId: routeFlows.keySet()) {
 				ITransitRoute transitRoute = null;
 				for(AnalyticalModelTransitRoute route: routes) { //Find the transit route
@@ -1155,7 +1155,7 @@ public class CNLSUEModel implements AnalyticalModel{
 				}
 			}
 		}
-		System.out.println("The time used for transit network loading is "+ (System.nanoTime() - time)/1e9);
+		//System.out.println("The time used for transit network loading is "+ (System.nanoTime() - time)/1e9);
 		//System.out.println(linkVolume.size());
 		return transitLinkVolume;
 	}
@@ -1297,7 +1297,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		}
 		squareSum = Math.sqrt(squareSum);
 		this.error.get(timeBeanId).add(squareSum);
-		logger.info("ERROR amount for "+timeBeanId+" = "+squareSum);
+		//logger.info("ERROR amount for "+timeBeanId+" = "+squareSum);
 		//System.out.println("in timeBean Id "+timeBeanId+" No of link not converged = "+sum);
 		
 //		try {
@@ -1306,8 +1306,8 @@ public class CNLSUEModel implements AnalyticalModel{
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-		
-		if (squareSum <= this.tolerance || someLinkDeviatedTooMuch){
+		List<Double> errorList = this.error.get(timeBeanId); //TODO: See if it should be there or not, why in hqlx114, the model would break in iteration 2?
+		if (squareSum <= this.tolerance || someLinkDeviatedTooMuch || (errorList.size() > 2 && Math.abs(errorList.get(errorList.size()-1) - errorList.get(errorList.size()-2)) < 1)){
 			return true;
 		}else{
 			return false;
@@ -1450,7 +1450,6 @@ public class CNLSUEModel implements AnalyticalModel{
 	 */
 	public void singleTimeBeanTA(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
 		boolean shouldStop=false;
-		
 		for(int i=1;i<500;i++) {
 			//for(this.car)
 			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;

@@ -87,6 +87,11 @@ public class MeasurementsWriter extends DefaultHandler{
 					rootEle.appendChild(measurement);
 				}
 			}
+			
+			Element fares = document.createElement("fare_received"); //Save the fares
+			fares.setAttribute("fare_collected", Double.toString(m.getBusProfit()));
+			rootEle.appendChild(fares);
+			
 			document.appendChild(rootEle);
 			
 

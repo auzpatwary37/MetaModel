@@ -27,7 +27,7 @@ import dynamicTransitRouter.fareCalculators.LRFareCalculator;
 import dynamicTransitRouter.fareCalculators.MTRFareCalculator;
 import dynamicTransitRouter.fareCalculators.UniformFareCalculator;
 import dynamicTransitRouter.fareCalculators.ZonalFareXMLParserV2;
-import dynamicTransitRouter.transfer.BusMinibusTransferDiscount;
+import dynamicTransitRouter.transfer.AllPTTransferDiscount;
 import dynamicTransitRouter.transfer.TransferDiscountCalculator;
 import ust.hk.praisehk.metamodelcalibration.Utils.ModalToMATSim;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModelSubPop;
@@ -183,7 +183,7 @@ public static void main(String[] args) throws IOException, SAXException, ParserC
 		timeBean.put(Integer.toString(i), new Tuple<Double,Double>((i-1)*3600.,i*3600.));
 		
 	}
-	TransferDiscountCalculator tdc = new BusMinibusTransferDiscount("fare/GMB.csv");
+	TransferDiscountCalculator tdc = new AllPTTransferDiscount("fare/transitDiscount.json");
 	//Object a=scenario.getPopulation().getPersonAttributes();
 	CNLSUEModelSubPop anaModel=new CNLSUEModelSubPop(config,ParamReader.getDefaultTimeBean(),subPopNames);
 	anaModel.generateRoutesAndODWithoutRoute(scenario.getPopulation(), scenario.getNetwork(), scenario.getLanes(), 

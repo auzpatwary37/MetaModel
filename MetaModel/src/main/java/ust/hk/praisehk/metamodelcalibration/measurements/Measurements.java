@@ -94,6 +94,7 @@ public class Measurements {
 		for(Measurement mm: this.measurements.values()) {
 			m.addMeasurement(mm.clone());
 		}
+		m.busProfit = this.busProfit;
 		return m;
 	}
 	
