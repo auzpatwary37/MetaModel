@@ -13,6 +13,7 @@ import org.matsim.core.utils.collections.Tuple;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
+import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementDataContainer;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
 public class SimpleOptimizationFunction extends OptimizationFunction{
@@ -41,8 +42,9 @@ public class SimpleOptimizationFunction extends OptimizationFunction{
 		Map<String,Map<Id<Link>,Double>> linkVolume=null;
 		this.getSUE().clearLinkCarandTransitVolume();
 		
+		MeasurementDataContainer mdc = new MeasurementDataContainer();
 		if(!this.metaModelType.equals(MetaModel.LinearMetaModelName) && !this.metaModelType.equals(MetaModel.QudaraticMetaModelName)) {
-			linkVolume=this.getSUE().perFormSUE(this.pReader.ScaleUp(new LinkedHashMap<>(params)));
+			linkVolume=this.getSUE().perFormSUE(this.pReader.ScaleUp(new LinkedHashMap<>(params)), mdc);
 		}
 		double objective=calcMetaModelObjective(linkVolume, params);
 		int d=0;
@@ -136,10 +138,14 @@ public class SimpleOptimizationFunction extends OptimizationFunction{
 		for(Measurement m:this.getRealData().getMeasurements().values()) {
 			for(String timeBean:m.getValidTimeBeans()) {
 				double AnaLyticalModelLinkCount=anaMeasurements.getVolumes(m.getId()).get(timeBean);
-				MetaModel metaModel=this.getMetaModels().get(m.getId()).get(timeBean);
+				MetaModel metaModel=this.metaModels.get(m.getId()).get(timeBean);
 				metaMeasurements.addVolume(m.getId(), timeBean, metaModel.calcMetaModel(AnaLyticalModelLinkCount, params));
 			}
 		}
+		
+		//For the profit
+		MetaModel metaModel=this.metaModels.get(MetaModel.profitMeasurement).get("0");
+		metaMeasurements.setBusProfit(metaModel.calcMetaModel(anaMeasurements.getBusProfit(), params));
 		
 		objective=ObjectiveCalculator.calcObjective(this.getRealData(), metaMeasurements,type);
 		return objective;

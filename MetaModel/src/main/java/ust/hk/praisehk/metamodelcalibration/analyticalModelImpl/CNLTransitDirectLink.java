@@ -31,8 +31,6 @@ public class CNLTransitDirectLink extends TransitDirectLink{
 	//private Scenario scenario;
 	Vehicles transitVehicles;
 	
-	
-	
 	public CNLTransitDirectLink(String startStopId, String endStopId, Id<Link> startLinkId, Id<Link> endLinkId,
 			TransitRoute tr, Id<TransitLine> lineId, Vehicles transitVehicles) {
 		super(startStopId, endStopId, startLinkId, endLinkId, tr, lineId);

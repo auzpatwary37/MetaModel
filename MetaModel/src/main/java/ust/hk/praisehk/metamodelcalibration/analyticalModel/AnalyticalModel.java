@@ -13,6 +13,7 @@ import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
+import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementDataContainer;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
 
@@ -34,10 +35,12 @@ public interface AnalyticalModel {
 	 * This performs SUE assignment in the network
 	 * this can be single or multi-modal Assignment, but it will take calibration parameters and perform a SUE Assignment
 	 * using the supplied parameters.
+	 * 
+	 * Added custom return. Enoch 2 July 2019
 	 */
-	public Map<String, Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params);
+	public Map<String, Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params, MeasurementDataContainer returns);
 	
-	public Map<String, Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params,LinkedHashMap<String, Double> anaParams);
+	public Map<String, Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params,LinkedHashMap<String, Double> anaParams, MeasurementDataContainer returns);
 	
 	public void clearLinkCarandTransitVolume();
 	

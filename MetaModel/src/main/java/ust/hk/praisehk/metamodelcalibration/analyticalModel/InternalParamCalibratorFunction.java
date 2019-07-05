@@ -12,6 +12,7 @@ import org.matsim.core.utils.collections.Tuple;
 
 import de.xypron.jcobyla.Calcfc;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
+import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementDataContainer;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
 public class InternalParamCalibratorFunction implements Calcfc{
@@ -72,10 +73,11 @@ public class InternalParamCalibratorFunction implements Calcfc{
 				double objective=0;
 				for(int i=0;i<this.simMeasurements.size();i++) {
 					LinkedHashMap<String,Double> param=new LinkedHashMap<>(this.Parmas.get(i));
+					MeasurementDataContainer mdc = new MeasurementDataContainer();
 					//sue.clearLinkCarandTransitVolume();
-					Map<String,Map<Id<Link>,Double>> anaCount=this.sue.perFormSUE(param, anaParam);
+					Map<String,Map<Id<Link>,Double>> anaCount=this.sue.perFormSUE(param, anaParam, mdc);
 					Measurements anaMeasurement=this.simMeasurements.get(0).clone();
-					anaMeasurement.updateMeasurements(anaCount);
+					anaMeasurement.updateMeasurements(mdc);
 					Measurements simMeasurement=this.simMeasurements.get(i);
 					for(Id<Measurement> mId:simMeasurement.getMeasurements().keySet()) {
 						for(String s:simMeasurement.getVolumes(mId).keySet()) {
@@ -167,8 +169,10 @@ public class InternalParamCalibratorFunction implements Calcfc{
 				Map<Integer,Measurements> anaMeasurements=new HashMap<>();
 				for(int i=0;i<this.simMeasurements.size();i++) {
 					anaMeasurements.put(i,this.simMeasurements.get(i).clone());
-					Map<String,Map<Id<Link>,Double>> linkFlows=this.sue.perFormSUE(new LinkedHashMap<>(this.Parmas.get(i)));
-					anaMeasurements.get(i).updateMeasurements(linkFlows);
+					MeasurementDataContainer mdc = new MeasurementDataContainer();
+					//Map<String,Map<Id<Link>,Double>> linkFlows = 
+					this.sue.perFormSUE(new LinkedHashMap<>(this.Parmas.get(i)), mdc);
+					anaMeasurements.get(i).updateMeasurements(mdc);
 				}
 				return anaMeasurements;
 			}

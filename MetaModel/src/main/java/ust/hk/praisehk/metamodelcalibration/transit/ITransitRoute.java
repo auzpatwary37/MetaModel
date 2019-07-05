@@ -29,6 +29,7 @@ import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 import dynamicTransitRouter.TransitRouterFareDynamicImpl;
 import dynamicTransitRouter.fareCalculators.FareCalculator;
 import dynamicTransitRouter.fareCalculators.MTRFareCalculator;
+import dynamicTransitRouter.transfer.TransferDiscountCalculator;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelTransitRoute;
@@ -140,7 +141,8 @@ public class ITransitRoute implements AnalyticalModelTransitRoute {
 	
 	@Override
 	public double calcRouteUtility(LinkedHashMap<String, Double> params, LinkedHashMap<String, Double> anaParams,
-			AnalyticalModelNetwork network, Map<String, FareCalculator> farecalc, Tuple<Double, Double> timeBean) {
+			AnalyticalModelNetwork network, Map<String, FareCalculator> farecalc, 
+			TransferDiscountCalculator tdc, Tuple<Double, Double> timeBean) {
 		double MUTravelTime=params.get(CNLSUEModel.MarginalUtilityofTravelptName)/3600.0-params.get(CNLSUEModel.MarginalUtilityofPerformName)/3600.0;
 		double MUDistance=params.get(CNLSUEModel.MarginalUtilityOfDistancePtName);
 		double MUWalkTime=params.get(CNLSUEModel.MarginalUtilityOfWalkingName)/3600.0-params.get(CNLSUEModel.MarginalUtilityofPerformName)/3600.0;
@@ -148,7 +150,7 @@ public class ITransitRoute implements AnalyticalModelTransitRoute {
 		double ModeConstant=params.get(CNLSUEModel.ModeConstantPtname);
 		double MUMoney=params.get(CNLSUEModel.MarginalUtilityofMoneyName);
 		double DistanceBasedMoneyCostWalk=params.get(CNLSUEModel.DistanceBasedMoneyCostWalkName);
-		double fare = this.getFare(null, farecalc);
+		double fare = this.getFare(null, farecalc, tdc);
 		double travelTime=this.calcRouteTravelTime(network,timeBean,params,anaParams);
 		double walkTime=this.getRouteWalkingDistance()/1.4;
 		double walkDist=this.getRouteWalkingDistance();
@@ -167,7 +169,7 @@ public class ITransitRoute implements AnalyticalModelTransitRoute {
 	}
 
 	@Override
-	public double getFare(TransitSchedule ts, Map<String, FareCalculator> farecalc) {
+	public double getFare(TransitSchedule ts, Map<String, FareCalculator> farecalc, TransferDiscountCalculator tdc) {
 		if(this.routeFare!=0) {
 			return this.routeFare;
 		}

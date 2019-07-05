@@ -45,5 +45,8 @@ public interface MetaModel {
 	public static final String GradientBased_II_MetaModelName="GD-II";
 	public static final String GradientBased_III_MetaModelName="GD-III";
 	
+	public final Id<Measurement> profitMeasurement = Id.create("profit", Measurement.class);
+
+	
 	public Id<Measurement> getMeasurementId();
 }

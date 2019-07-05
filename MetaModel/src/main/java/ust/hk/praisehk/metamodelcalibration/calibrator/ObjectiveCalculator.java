@@ -55,7 +55,7 @@ public class ObjectiveCalculator {
 	 * @return
 	 */
 	public static double calcFareObjective(Measurements simOrAnaMeasurements) {
-		return simOrAnaMeasurements.getBusProfit();
+		return -simOrAnaMeasurements.getBusProfit();
 	}
 	
 	public static double aadtDifferenceObjective(Measurements realMeasurements,Measurements simOrAnaMeasurements) {

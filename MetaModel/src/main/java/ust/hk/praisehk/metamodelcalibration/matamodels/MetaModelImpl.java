@@ -41,9 +41,14 @@ public abstract class MetaModelImpl implements MetaModel{
 	
 	protected MetaModelImpl(Id<Measurement> measurementId,Map<Integer,Measurements> SimData,
 			Map<Integer, LinkedHashMap<String, Double>> paramsToCalibrate,String timeBeanId, int currentParamNo) {
-		
-		for(Entry<Integer, Measurements> e:SimData.entrySet()) {
-			this.simData.put(e.getKey(),e.getValue().getVolumes(measurementId).get(timeBeanId));
+		if(measurementId.equals(MetaModel.profitMeasurement)) {
+			for(Entry<Integer, Measurements> e:SimData.entrySet()) {
+				this.simData.put(e.getKey(),e.getValue().getBusProfit());
+			}
+		}else {
+			for(Entry<Integer, Measurements> e:SimData.entrySet()) {
+				this.simData.put(e.getKey(),e.getValue().getVolumes(measurementId).get(timeBeanId));
+			}
 		}
 		this.measurementId=measurementId;
 		this.params=new HashMap<>(paramsToCalibrate);

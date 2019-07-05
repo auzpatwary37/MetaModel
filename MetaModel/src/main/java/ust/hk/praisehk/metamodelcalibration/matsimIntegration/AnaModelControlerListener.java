@@ -101,7 +101,7 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 				busFareCollected /= this.AverageCountOverNoOfIteration;
 				Measurements m=storage.getCalibrationMeasurements().clone();
 				m.updateMeasurements(counts); //Store the counts to the measurement object.
-				m.updateBusProfit(busFareCollected);
+				m.setBusProfit(busFareCollected);
 				//new MeasurementsWriter(m).write();
 				this.storage.storeMeasurements(this.currentParam.getParam(), m);
 			}
@@ -110,7 +110,7 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 			if(counter==this.maxIter) {
 				Measurements m=storage.getCalibrationMeasurements().clone();
 				m.updateMeasurements(this.pcuVolumeCounter.geenerateLinkCounts());
-				m.updateBusProfit(transitFares.getBusFareCollected().doubleValue());
+				m.setBusProfit(transitFares.getBusFareCollected().doubleValue());
 				//m.writeCSVMeasurements(fileLoc);
 				this.storage.storeMeasurements(this.currentParam.getParam(), m);
 			}

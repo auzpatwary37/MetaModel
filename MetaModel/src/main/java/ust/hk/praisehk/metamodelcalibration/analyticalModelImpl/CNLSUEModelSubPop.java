@@ -30,6 +30,7 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpair;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.calibrator.ParamReader;
+import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementDataContainer;
 import ust.hk.praisehk.metamodelcalibration.transit.TransitNetworkHR;
 import ust.hk.praisehk.shortestpath.SignalFlowReductionGenerator;
 
@@ -75,6 +76,10 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		}
 		logger.info("Analytical model created successfully.");
 		
+	}
+	
+	public void setTransferDiscountCalculator(TransferDiscountCalculator tdc) {
+		this.tdc = tdc;
 	}
 	
 	private void defaultParameterInitiation(Config config){
@@ -339,9 +344,10 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	public Map<String,Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> noparams,LinkedHashMap<String,Double> anaParams) {
+	public Map<String,Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> noparams,
+			LinkedHashMap<String,Double> anaParams, MeasurementDataContainer mdc) {
 		LinkedHashMap<String,Double>params=this.pReader.ScaleUp(noparams);
-		return super.perFormSUE(params, anaParams);
+		return super.perFormSUE(params, anaParams, mdc);
 	}
 	
 	@Override

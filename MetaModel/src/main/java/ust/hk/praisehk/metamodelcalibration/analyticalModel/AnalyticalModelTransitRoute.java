@@ -11,6 +11,7 @@ import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
+import dynamicTransitRouter.transfer.TransferDiscountCalculator;
 
 
 
@@ -30,14 +31,16 @@ public interface AnalyticalModelTransitRoute{
 	 * @param params
 	 * @return
 	 */
-	public abstract double calcRouteUtility(LinkedHashMap<String,Double> params,
-			LinkedHashMap<String,Double> AnaParam,AnalyticalModelNetwork network,Map<String,FareCalculator> farecalc,Tuple<Double,Double>timeBean);
+	public abstract double calcRouteUtility(LinkedHashMap<String, Double> params, LinkedHashMap<String, Double> anaParams,
+			AnalyticalModelNetwork network, Map<String, FareCalculator> farecalc, TransferDiscountCalculator tdc,
+			Tuple<Double, Double> timeBean);
+	
 	/**
 	 * Calculates the route fare
 	 * @param fc
 	 * @return
 	 */
-	public abstract double getFare(TransitSchedule ts,Map<String,FareCalculator> farecalc);
+	public abstract double getFare(TransitSchedule ts,Map<String,FareCalculator> farecalc, TransferDiscountCalculator tdc);
 	
 	/**
 	 * Calculates the route travel Time (Only direct Link Travel Times are taken)

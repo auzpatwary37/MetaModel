@@ -29,6 +29,7 @@ import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.QuadraticMetaModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.SimAndAnalyticalGradientCalculator;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
+import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementDataContainer;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementsReader;
 import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementsWriter;
@@ -72,8 +73,6 @@ public class CalibratorImpl implements Calibrator {
 	private ParamReader pReader;
 	private final String fileLoc;
 	private final boolean shouldPerformInternalParamCalibration;
-
-	
 	
 	
 	public CalibratorImpl(Measurements calibrationMeasurements,String fileLoc,boolean internalParameterCalibration,
@@ -142,10 +141,11 @@ public class CalibratorImpl implements Calibrator {
 			metaModelType=MetaModel.AnalyticalLinearMetaModelName;
 		}
 		
+		if(this.iterationNo > 0) {
+			this.oldMetaModel = new HashMap<>(this.metaModels);
+		}
+		
 		for(Measurement m:this.calibrationMeasurements.getMeasurements().values()) {
-			if(this.iterationNo>0) {
-				this.oldMetaModel.put(m.getId(), this.metaModels.get(m.getId()));
-			}
 			this.metaModels.put(m.getId(), new HashMap<String,MetaModel>());
 			for(String timeBeanId : m.getValidTimeBeans()) {
 
@@ -198,9 +198,22 @@ public class CalibratorImpl implements Calibrator {
 				
 				}
 				this.metaModels.get(m.getId()).put(timeBeanId, metaModel);
-				
 			}
 		}
+		
+		//Add the fare metamodel
+		MetaModel metaModel;
+		
+		if(metaModelType.equals(MetaModel.AnalyticalLinearMetaModelName)){
+			metaModel=new AnalyticLinearMetaModel(MetaModel.profitMeasurement, this.simMeasurements, this.anaMeasurements, this.params, null, this.currentParamNo) ;
+			Map<String, MetaModel> metaModelMap = new HashMap<String,MetaModel>();
+			metaModelMap.put("0", metaModel);
+			this.metaModels.put(MetaModel.profitMeasurement, metaModelMap);
+		}else {
+			throw new IllegalArgumentException("The metamodel of this type is not supported!");
+		}
+					
+		
 	}
 
 	@Override
@@ -210,8 +223,9 @@ public class CalibratorImpl implements Calibrator {
 		this.sueAssignment=sue;
 		Measurements anaMeasurements=this.calibrationMeasurements.clone();
 		if(!metaModelType.equals(MetaModel.LinearMetaModelName)&&!metaModelType.equals(MetaModel.QudaraticMetaModelName)) {
-			Map<String,Map<Id<Link>,Double>>linkVolumes= sue.perFormSUE(this.pReader.ScaleUp(this.trialParam));
-			anaMeasurements.updateMeasurements(linkVolumes);
+			MeasurementDataContainer mdc = new MeasurementDataContainer();			
+			sue.perFormSUE(this.pReader.ScaleUp(this.trialParam), mdc);
+			anaMeasurements.updateMeasurements(mdc);
 		}
 		new MeasurementsWriter(anaMeasurements).write(this.fileLoc+"anaMeasurement"+this.iterationNo+".xml");
 		new MeasurementsWriter(simMeasurements).write(this.fileLoc+"simMeasurement"+this.iterationNo+".xml");
@@ -244,11 +258,11 @@ public class CalibratorImpl implements Calibrator {
 			double CurrentSimObjective=ObjectiveCalculator.calcObjective(this.calibrationMeasurements, 
 					this.simMeasurements.get(this.currentParamNo), this.ObjectiveType);
 			double CurrentMetaModelObjective=ObjectiveCalculator.calcObjective(this.calibrationMeasurements, 
-					this.CalcMetaModelPrediction(this.currentParamNo), this.ObjectiveType);
+					this.calcMetaModelPrediction(this.currentParamNo), this.ObjectiveType);
 			double trialSimObjective=ObjectiveCalculator.calcObjective(this.calibrationMeasurements, 
 					this.simMeasurements.get(this.iterationNo), this.ObjectiveType);
 			double trialMetaModelObjective=ObjectiveCalculator.calcObjective(this.calibrationMeasurements, 
-					this.CalcMetaModelPrediction(this.iterationNo), this.ObjectiveType);
+					this.calcMetaModelPrediction(this.iterationNo), this.ObjectiveType);
 			double SimObjectiveChange=CurrentSimObjective-trialSimObjective;
 			double MetaObjectiveChange=CurrentMetaModelObjective-trialMetaModelObjective;
 			double rouk=SimObjectiveChange/MetaObjectiveChange;
@@ -354,6 +368,9 @@ public class CalibratorImpl implements Calibrator {
 							this.simMeasurements.get(this.iterationNo).getVolumes(m.getId()).get(timeBean)+"\n");
 				}
 			}
+			
+			fw.append("fare,0,"+this.calibrationMeasurements.getBusProfit()+","+this.simMeasurements.get(this.currentParamNo).getBusProfit()+","+
+						this.simMeasurements.get(this.iterationNo).getBusProfit()+"\n");
 		fw.flush();
 		fw.close();
 		} catch (IOException e) {
@@ -363,7 +380,7 @@ public class CalibratorImpl implements Calibrator {
 	}
 	
 	
-	private Measurements CalcMetaModelPrediction(int iterNo) {
+	private Measurements calcMetaModelPrediction(int iterNo) {
 		Measurements metaModelMeasurements=this.calibrationMeasurements.clone();
 		for(Measurement m: this.calibrationMeasurements.getMeasurements().values()) {
 			for(String timeBeanId:m.getValidTimeBeans()) {
@@ -371,6 +388,10 @@ public class CalibratorImpl implements Calibrator {
 						calcMetaModel(this.anaMeasurements.get(iterNo).getVolumes(m.getId()).get(timeBeanId), this.params.get(iterNo)));
 			}
 		}
+		
+		metaModelMeasurements.setBusProfit(this.metaModels.get(MetaModel.profitMeasurement).get("0"). //Just the time bin is put as 0.
+				calcMetaModel(this.anaMeasurements.get(iterNo).getBusProfit(), this.params.get(iterNo)));
+		
 		return metaModelMeasurements;
 	}
 	

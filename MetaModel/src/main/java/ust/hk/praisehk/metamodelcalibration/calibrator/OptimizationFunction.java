@@ -22,7 +22,7 @@ public abstract class OptimizationFunction implements Calcfc  {
 	private final LinkedHashMap<String,Double> currentParams;
 	private final Map<String,Tuple<Double,Double>> timeBean;
 	private final Measurements RealData;
-	private final Map<Id<Measurement>,Map<String,MetaModel>> metaModels;
+	protected final Map<Id<Measurement>,Map<String,MetaModel>> metaModels;
 	private double[] hessian;
 	private final LinkedHashMap<String,Tuple<Double,Double>> paramLimit;
 	

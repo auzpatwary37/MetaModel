@@ -105,7 +105,16 @@ public class Measurements {
 		}
 	}
 	
-	public void updateBusProfit(double profit) {
+	public void updateMeasurements(MeasurementDataContainer mdc) {
+		for(Measurement m:this.measurements.values()) {
+			if(m instanceof LinkMeasurement)
+				((LinkMeasurement) m).updateLinkVolumes(mdc.linkVolumes);
+		}
+		
+		this.busProfit = mdc.profit;
+	}
+	
+	public void setBusProfit(double profit) {
 		this.busProfit = profit;
 	}
 	
