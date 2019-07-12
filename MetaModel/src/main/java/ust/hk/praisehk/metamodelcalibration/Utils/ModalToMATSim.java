@@ -26,11 +26,8 @@ import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.population.routes.RouteUtils;
-import org.matsim.core.router.ActivityWrapperFacility;
 import org.matsim.core.router.TeleportationRoutingModule;
 import org.matsim.core.utils.collections.Tuple;
-import org.matsim.facilities.ActivityFacilities;
-import org.matsim.facilities.ActivityFacility;
 import org.matsim.facilities.FacilitiesUtils;
 import org.matsim.facilities.Facility;
 import org.matsim.pt.PtConstants;
@@ -65,7 +62,7 @@ public class ModalToMATSim {
 		network = scenario.getNetwork();
 		PlansCalcRouteConfigGroup cg = (PlansCalcRouteConfigGroup) scenario.getConfig().getModules().get("planscalcroute");
 		walkRouter = new TeleportationRoutingModule(TransportMode.transit_walk, 
-				PopulationUtils.getFactory(), cg.getTeleportedModeSpeeds().get(TransportMode.walk),
+				scenario, cg.getTeleportedModeSpeeds().get(TransportMode.walk),
 				cg.getBeelineDistanceFactors().get(TransportMode.walk)	);
 		odPairSet = model.getODPairset();
 	}
@@ -232,8 +229,8 @@ public class ModalToMATSim {
 										thisAct.getCoord(), lastLegtimeBin);
 								if(transitRouteFound!= null) {
 									p.getPlanElements().remove(i-1);
-									Facility fromFacility = new ActivityWrapperFacility( lastActivity ) ;
-									Facility toFacility = new ActivityWrapperFacility( thisAct ) ;
+									Facility fromFacility = FacilitiesUtils.wrapActivity( lastActivity ) ;
+									Facility toFacility = FacilitiesUtils.wrapActivity( thisAct ) ;
 									p.getPlanElements().addAll(i-1, fillWithActivities(transitRouteFound, fromFacility, 
 											toFacility, lastLeg.getDepartureTime(), null));
 									i+= ( (transitRouteFound.size()-1) *2);

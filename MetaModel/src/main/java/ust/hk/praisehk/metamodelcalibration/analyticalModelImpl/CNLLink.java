@@ -1,6 +1,6 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModelImpl;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.matsim.api.core.v01.network.Link;
@@ -75,7 +75,7 @@ public class CNLLink extends AnalyticalModelLink{
 		this.TransitMapping.clear();
 	}
 	
-	public double getMaximumFlowCapacity(Tuple<Double,Double> timeBean,LinkedHashMap<String,Double>params) {
+	public double getMaximumFlowCapacity(Tuple<Double,Double> timeBean, Map<String,Double>params) {
 		return super.getCapacity()*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get("All "+CNLSUEModel.CapacityMultiplierName)*this.gcRatio * effectiveCapacity;
 	}
 	
@@ -84,7 +84,7 @@ public class CNLLink extends AnalyticalModelLink{
 	 * employs BPR travel time function
 	 */
 	@Override
-	public double getLinkTravelTime(Tuple<Double,Double> timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams) {
+	public double getLinkTravelTime(Tuple<Double,Double> timeBean, Map<String,Double>params, Map<String,Double>anaParams) {
 		
 		if(!this.link.getAllowedModes().contains("train")) {
 			double totalpcu = super.getLinkAADTVolume();
@@ -105,8 +105,8 @@ public class CNLLink extends AnalyticalModelLink{
 		}
 	}
 	
-//	public double getLinkTravelTimeSubPop(Tuple<Double,Double> timeBean,LinkedHashMap<String,Double>fullparams,LinkedHashMap<String,Double>anaParams,String subPopName) {
-//		LinkedHashMap<String,Double>params=CNLSUEModelSubPop.generateSubPopSpecificParam(fullparams, subPopName);
+//	public double getLinkTravelTimeSubPop(Tuple<Double,Double> timeBean,Map<String,Double>fullparams,Map<String,Double>anaParams,String subPopName) {
+//		Map<String,Double>params=CNLSUEModelSubPop.generateSubPopSpecificParam(fullparams, subPopName);
 //		if(!this.link.getAllowedModes().contains("train")) {
 //		double totalpcu=super.getLinkCarVolume()+super.getLinkTransitVolume();
 //		double capacity=super.getCapacity()*(timeBean.getSecond()-timeBean.getFirst())/3600*params.get(CNLSUEModel.CapacityMultiplierName)*this.gcRatio;

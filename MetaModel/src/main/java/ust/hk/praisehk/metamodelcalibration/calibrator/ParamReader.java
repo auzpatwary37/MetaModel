@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
@@ -190,25 +191,25 @@ public class ParamReader {
 	 * This will scale up the parameter from no format to Parameter name format
 	 * The sent parameter is not changed. A new parameter is generated and returned
 	 * If the parameter sent is already in String format, than nothing will be changed.
-	 * @param param
+	 * @param params
 	 * @return
 	 */
-	public LinkedHashMap<String,Double> ScaleUp(LinkedHashMap<String,Double>param) throws IllegalArgumentException{
-		if((this.ParamNoCode.values()).containsAll(param.keySet())) {
+	public LinkedHashMap<String,Double> ScaleUp(Map<String, Double> params) throws IllegalArgumentException{
+		if((this.ParamNoCode.values()).containsAll(params.keySet())) {
 			
-		}else if((this.ParamNoCode.keySet()).containsAll(param.keySet())) {
+		}else if((this.ParamNoCode.keySet()).containsAll(params.keySet())) {
 			logger.warn("Parameter is already scaled up, i.e. in ParamName-Value format. Method will exit.");
-			return new LinkedHashMap<String,Double>(param);
+			return new LinkedHashMap<String,Double>(params);
 		}else {
 			logger.error("Invalid input. Params can be either in ParamName-Value format or ParamCode-Value Format");
 			throw new IllegalArgumentException("Invalid input. Params can be either in ParamName-Value format or ParamCode-Value Format");
 		}
 		LinkedHashMap<String,Double> scaledParam=new LinkedHashMap<String,Double>();
 		for(Entry<String, String> e:this.ParamNoCode.entrySet()) {
-			if(param.get(e.getValue())==null) {
+			if(params.get(e.getValue())==null) {
 				//scaledParam.put(e.getKey(),this.DefaultParam.get(e.getValue()));
 			}else {
-				scaledParam.put(e.getKey(), param.get(e.getValue()));
+				scaledParam.put(e.getKey(), params.get(e.getValue()));
 			}
 		}
 		return scaledParam;

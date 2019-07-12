@@ -66,7 +66,7 @@ public class CNLTransitDirectLink extends TransitDirectLink{
 	 * calculates the link travel time 
 	 */
 	@Override
-	public double getLinkTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams) {
+	public double getLinkTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,Map<String, Double> params,Map<String, Double> anaParams) {
 		double travelTime=0;
 		for(Id<Link> lId:this.linkList) {
 			travelTime+=((AnalyticalModelLink)network.getLinks().get(lId)).getLinkTravelTime(timeBean,params,anaParams);

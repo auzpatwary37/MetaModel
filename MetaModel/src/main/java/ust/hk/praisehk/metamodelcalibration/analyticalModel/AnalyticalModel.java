@@ -1,6 +1,5 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,22 +37,22 @@ public interface AnalyticalModel {
 	 * 
 	 * Added custom return. Enoch 2 July 2019
 	 */
-	public Map<String, Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params, MeasurementDataContainer returns);
+	public Map<String, Map<Id<Link>, Double>> perFormSUE(Map<String, Double> params, MeasurementDataContainer returns);
 	
-	public Map<String, Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params,LinkedHashMap<String, Double> anaParams, MeasurementDataContainer returns);
+	public Map<String, Map<Id<Link>, Double>> perFormSUE(Map<String, Double> params,Map<String, Double> anaParams, MeasurementDataContainer returns);
 	
 	public void clearLinkCarandTransitVolume();
 	
 	@Deprecated
 	public abstract Population getLastPopulation(); //I don't know why it is here.
 
-	public void setDefaultParameters(LinkedHashMap<String, Double> defaultParam);
+	public void setDefaultParameters(Map<String, Double> defaultParam);
 
-	public LinkedHashMap<String, Double> getAnalyticalModelInternalParams();
+	public Map<String, Double> getAnalyticalModelInternalParams();
 
 	public Map<String, Tuple<Double, Double>> getTimeBeans();
 
-	public LinkedHashMap<String, Tuple<Double, Double>> getAnalyticalModelParamsLimit();
+	public Map<String, Tuple<Double, Double>> getAnalyticalModelParamsLimit();
 	
 	public String getFileLoc();
 	
@@ -81,7 +80,7 @@ public interface AnalyticalModel {
 	public static final String CapacityMultiplierName="CapacityMultiplier";
 	
 	public Map<Integer, Measurements> calibrateInternalParams(Map<Integer, Measurements> simMeasurements,
-			Map<Integer, LinkedHashMap<String, Double>> params, LinkedHashMap<String, Double> initialParam,
+			Map<Integer, Map<String, Double>> scaledParam, Map<String, Double> initialParam,
 			int currentParamNo);
 
 	@Deprecated

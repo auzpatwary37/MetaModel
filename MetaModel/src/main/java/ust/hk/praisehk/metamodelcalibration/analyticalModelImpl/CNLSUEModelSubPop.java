@@ -168,14 +168,14 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		printDemandTotalAndAgentTripStat();
 	}
 	
-	public static LinkedHashMap<String,Double>generateSubPopSpecificParam(LinkedHashMap<String,Double>originalparams,String subPopName){
+	public static LinkedHashMap<String,Double>generateSubPopSpecificParam(Map<String, Double> params,String subPopName){
 		LinkedHashMap<String,Double> specificParam=new LinkedHashMap<>();
-		for(String s:originalparams.keySet()) {
+		for(String s:params.keySet()) {
 			if(s.contains(subPopName)) {
-				specificParam.put(s.split(" ")[1],originalparams.get(s));
+				specificParam.put(s.split(" ")[1],params.get(s));
 			}
 			if(s.contains("All")) {
-				specificParam.put(s,originalparams.get(s));
+				specificParam.put(s,params.get(s));
 			}
 		}
 		return specificParam;
@@ -265,9 +265,9 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	protected Map<Id<Link>, Map<Id<Link>, Double>> networkLoadingCarSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,double counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
+	protected Map<Id<Link>, Map<Id<Link>, Double>> networkLoadingCarSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,double counter,Map<String,Double> params, Map<String, Double> anaParams){
 		String s=this.odPairs.getODpairset().get(ODpairId).getSubPopulation();
-		LinkedHashMap<String,Double>newParam=params;
+		Map<String,Double> newParam = new HashMap<>(params);
 		if(s!=null) {
 			newParam=this.generateSubPopSpecificParam(params, s);
 		}
@@ -275,9 +275,9 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	protected HashMap<Id<TransitLink>,Double> networkLoadingTransitSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,int counter,LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
+	protected HashMap<Id<TransitLink>,Double> networkLoadingTransitSingleOD(Id<AnalyticalModelODpair> ODpairId,String timeBeanId,int counter,Map<String,Double> params, Map<String, Double> anaParams){
 		String s= this.odPairs.getODpairset().get(ODpairId).getSubPopulation();
-		LinkedHashMap<String,Double> newParam = params;
+		Map<String,Double> newParam = new HashMap<>(params);
 		if(s!=null) {
 			newParam=this.generateSubPopSpecificParam(params, s);
 		}
@@ -285,7 +285,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	protected void performModalSplit(LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams,String timeBeanId) {
+	protected void performModalSplit(Map<String,Double>params,Map<String,Double>anaParams,String timeBeanId) {
 		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()){
 			
 			//For GV car proportion is always 1
@@ -344,14 +344,14 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 	}
 	
 	@Override
-	public Map<String,Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> noparams,
-			LinkedHashMap<String,Double> anaParams, MeasurementDataContainer mdc) {
+	public Map<String,Map<Id<Link>, Double>> perFormSUE(Map<String, Double> noparams,
+			Map<String,Double> anaParams, MeasurementDataContainer mdc) {
 		LinkedHashMap<String,Double>params=this.pReader.ScaleUp(noparams);
 		return super.perFormSUE(params, anaParams, mdc);
 	}
 	
 	@Override
-	public void setDefaultParameters(LinkedHashMap<String,Double> params) {
+	public void setDefaultParameters(Map<String,Double> params) {
 		super.setDefaultParameters(this.pReader.ScaleUp(params));
 	}
 	

@@ -1,7 +1,6 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,9 +11,6 @@ import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
 import dynamicTransitRouter.transfer.TransferDiscountCalculator;
-
-
-
 
 
 /**
@@ -28,10 +24,10 @@ public interface AnalyticalModelTransitRoute{
 	
 	/**
 	 * calculates the route utility
-	 * @param params
+	 * @param params2
 	 * @return
 	 */
-	public abstract double calcRouteUtility(LinkedHashMap<String, Double> params, LinkedHashMap<String, Double> anaParams,
+	public abstract double calcRouteUtility(Map<String, Double> params2, Map<String, Double> internalParams,
 			AnalyticalModelNetwork network, Map<String, FareCalculator> farecalc, TransferDiscountCalculator tdc,
 			Tuple<Double, Double> timeBean);
 	
@@ -47,7 +43,7 @@ public interface AnalyticalModelTransitRoute{
 	 * @param network
 	 * @return
 	 */
-	public abstract double calcRouteTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams);
+	public abstract double calcRouteTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,Map<String,Double>params,Map<String,Double>anaParams);
 	/**
 	 * returns the route total walking distance 
 	 * @return
@@ -57,7 +53,7 @@ public interface AnalyticalModelTransitRoute{
 	 * Calculates and returns the route waiting time
 	 * @return
 	 */
-	public abstract double getRouteWaitingTime(LinkedHashMap<String,Double> anaParams,AnalyticalModelNetwork network);
+	public abstract double getRouteWaitingTime(Map<String,Double> anaParams,AnalyticalModelNetwork network);
 
 	public abstract Id<AnalyticalModelTransitRoute> getTrRouteId();
 	

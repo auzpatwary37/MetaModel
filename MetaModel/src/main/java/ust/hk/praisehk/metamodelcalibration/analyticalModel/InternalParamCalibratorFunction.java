@@ -1,7 +1,6 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -21,11 +20,11 @@ public class InternalParamCalibratorFunction implements Calcfc{
 		 */
 			
 		private AnalyticalModel sue;
-		private LinkedHashMap<String,Tuple<Double,Double>> paramLimit=new LinkedHashMap<>();
-		private LinkedHashMap<String,Double> initialParam;
+		private Map<String,Tuple<Double,Double>> paramLimit=new HashMap<>();
+		private Map<String,Double> initialParam;
 		private Map<Integer,Measurements> simMeasurements;
-		private Map<Integer,LinkedHashMap<String,Double>> Parmas;
-		private final LinkedHashMap<String,Double> currentParam;
+		private Map<Integer,Map<String,Double>> Parmas;
+		private final Map<String,Double> currentParam;
 		private final Map<String,Tuple<Double,Double>> timeBean;
 			
 		/**
@@ -33,29 +32,29 @@ public class InternalParamCalibratorFunction implements Calcfc{
 		 * @param simData: all simulation measurements
 		 * @param parmas all parameters
 		 * @param sue analyticalModel
-		 * @param initialParam Initial guess for internal parameters
+		 * @param initialParam2 Initial guess for internal parameters
 		 * @param currentParamNo The current selected parameter no
 		 */
-		public InternalParamCalibratorFunction(Map<Integer,Measurements> simData,Map<Integer,LinkedHashMap<String,Double>>params,AnalyticalModel sue, LinkedHashMap<String, Double> initialParam,Integer currentParamNo) {
+		public InternalParamCalibratorFunction(Map<Integer,Measurements> simData,Map<Integer, Map<String, Double>> params,AnalyticalModel sue, Map<String, Double> initialParam2,Integer currentParamNo) {
 
 				this.sue=sue;
-				this.initialParam=initialParam;
+				this.initialParam=initialParam2;
 				this.currentParam=params.get(currentParamNo);
 				this.simMeasurements=simData;
 				this.Parmas=params;
 				this.timeBean=simData.get(0).getTimeBean();
-				if(initialParam.size()==sue.getAnalyticalModelInternalParams().size()) {
+				if(initialParam2.size()==sue.getAnalyticalModelInternalParams().size()) {
 					paramLimit=sue.getAnalyticalModelParamsLimit();
 				}else {
 					for(Entry<String,Tuple<Double,Double>>e:sue.getAnalyticalModelParamsLimit().entrySet()) {
-						if(initialParam.containsKey(e.getKey())) {
+						if(initialParam2.containsKey(e.getKey())) {
 							this.paramLimit.put(e.getKey(), e.getValue());
 						}
 					}
 				}
 			}
 
-			public LinkedHashMap<String, Tuple<Double, Double>> getParamLimit() {
+			public Map<String, Tuple<Double, Double>> getParamLimit() {
 				return paramLimit;
 			}
 
@@ -67,12 +66,12 @@ public class InternalParamCalibratorFunction implements Calcfc{
 					y[j]=d+d*x[j]/100.;
 					j++;
 				}
-				LinkedHashMap<String,Double> anaParam=scaleUp(y);
+				Map<String,Double> anaParam=scaleUp(y);
 				
 				
 				double objective=0;
 				for(int i=0;i<this.simMeasurements.size();i++) {
-					LinkedHashMap<String,Double> param=new LinkedHashMap<>(this.Parmas.get(i));
+					Map<String,Double> param=new HashMap<>(this.Parmas.get(i));
 					MeasurementDataContainer mdc = new MeasurementDataContainer();
 					//sue.clearLinkCarandTransitVolume();
 					Map<String,Map<Id<Link>,Double>> anaCount=this.sue.perFormSUE(param, anaParam, mdc);
@@ -101,7 +100,7 @@ public class InternalParamCalibratorFunction implements Calcfc{
 				return objective;
 			}
 
-			private double calcEucleadeanDistance(LinkedHashMap<String,Double> param1,LinkedHashMap<String,Double>param2) {
+			private double calcEucleadeanDistance(Map<String,Double> param1,Map<String,Double>param2) {
 				double distance=0;
 				for(String s: param1.keySet()) {
 					distance+=Math.pow(param1.get(s)-param2.get(s), 2);
@@ -109,7 +108,7 @@ public class InternalParamCalibratorFunction implements Calcfc{
 				distance=Math.sqrt(distance);
 				return distance;
 			}
-			public double[] calcConstrain(double[] x, LinkedHashMap<String,Tuple<Double,Double>> paramLimit) {
+			public double[] calcConstrain(double[] x, Map<String,Tuple<Double,Double>> paramLimit) {
 				int noOfConst=2*x.length;
 				int j=0;
 				int k=0;
@@ -156,8 +155,8 @@ public class InternalParamCalibratorFunction implements Calcfc{
 				return c;
 			}
 			
-			private LinkedHashMap<String,Double> scaleUp(double[] x){
-				LinkedHashMap<String,Double> anaParam=new LinkedHashMap<>();
+			private Map<String,Double> scaleUp(double[] x){
+				Map<String,Double> anaParam=new HashMap<>();
 				int i=0;
 				for(String s:this.paramLimit.keySet()) {
 					anaParam.put(s, x[i]);
@@ -171,7 +170,7 @@ public class InternalParamCalibratorFunction implements Calcfc{
 					anaMeasurements.put(i,this.simMeasurements.get(i).clone());
 					MeasurementDataContainer mdc = new MeasurementDataContainer();
 					//Map<String,Map<Id<Link>,Double>> linkFlows = 
-					this.sue.perFormSUE(new LinkedHashMap<>(this.Parmas.get(i)), mdc);
+					this.sue.perFormSUE(new HashMap<>(this.Parmas.get(i)), mdc);
 					anaMeasurements.get(i).updateMeasurements(mdc);
 				}
 				return anaMeasurements;

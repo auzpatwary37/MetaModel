@@ -1,7 +1,7 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
@@ -88,7 +88,7 @@ public abstract class TransitDirectLink extends TransitLink{
 	public Id<TransitRoute> getRouteId() {
 		return routeId;
 	}
-	public abstract double getLinkTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams);
+	public abstract double getLinkTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,Map<String,Double>params,Map<String,Double>anaParams);
 //	public TransitSchedule getTs() {
 //		return ts;
 //	}

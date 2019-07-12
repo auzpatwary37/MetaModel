@@ -1,6 +1,7 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.matsim.api.core.v01.Coord;
@@ -58,7 +59,7 @@ public abstract class AnalyticalModelLink implements Link{
 	 * 
 	 */
 	
-	public abstract double getLinkTravelTime(Tuple<Double,Double> timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams);
+	public abstract double getLinkTravelTime(Tuple<Double,Double> timeBean,Map<String, Double> params,Map<String, Double> analyticalModelInternalParams);
 	
 	//It is probably not used?
 //	public void resetLinkVolume(double linkCarConstant) {

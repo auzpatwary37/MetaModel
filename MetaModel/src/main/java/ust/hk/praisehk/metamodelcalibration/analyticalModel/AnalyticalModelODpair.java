@@ -553,7 +553,7 @@ public class AnalyticalModelODpair {
 		
 	}
 
-	public double getExpectedMaximumCarUtility(LinkedHashMap<String,Double> params, LinkedHashMap<String,Double> anaParams, String timeBeanId) {
+	public double getExpectedMaximumCarUtility(Map<String, Double> params2, Map<String, Double> internalParams, String timeBeanId) {
 		if(this.routeUtility.get(timeBeanId).size()==0) {
 			return Double.NEGATIVE_INFINITY;
 		}
@@ -561,10 +561,10 @@ public class AnalyticalModelODpair {
 		for(double utility:this.routeUtility.get(timeBeanId).values()) {
 			logsum+=Math.exp(utility);
 		}
-		return 1 * Math.log(logsum) / anaParams.get("LinkMiu");
+		return 1 * Math.log(logsum) / internalParams.get("LinkMiu");
 	}
 
-	public double getExpectedMaximumTransitUtility(LinkedHashMap<String,Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
+	public double getExpectedMaximumTransitUtility(Map<String, Double> params2,Map<String, Double> internalParams,String timeBeanId) {
 		if(this.TrRouteUtility.get(timeBeanId).size()==0) {
 			return Double.NEGATIVE_INFINITY;
 		}
@@ -574,7 +574,7 @@ public class AnalyticalModelODpair {
 			
 		}
 		this.ExpectedMaximumTransitUtility=1*Math.log(logsum);
-		return ExpectedMaximumTransitUtility/anaParams.get("LinkMiu");
+		return ExpectedMaximumTransitUtility/internalParams.get("LinkMiu");
 	}
 
 	/**

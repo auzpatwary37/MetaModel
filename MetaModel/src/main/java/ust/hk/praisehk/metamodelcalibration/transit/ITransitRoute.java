@@ -140,7 +140,7 @@ public class ITransitRoute implements AnalyticalModelTransitRoute {
 	}
 	
 	@Override
-	public double calcRouteUtility(LinkedHashMap<String, Double> params, LinkedHashMap<String, Double> anaParams,
+	public double calcRouteUtility(Map<String, Double> params, Map<String, Double> anaParams,
 			AnalyticalModelNetwork network, Map<String, FareCalculator> farecalc, 
 			TransferDiscountCalculator tdc, Tuple<Double, Double> timeBean) {
 		double MUTravelTime=params.get(CNLSUEModel.MarginalUtilityofTravelptName)/3600.0-params.get(CNLSUEModel.MarginalUtilityofPerformName)/3600.0;
@@ -196,7 +196,7 @@ public class ITransitRoute implements AnalyticalModelTransitRoute {
 
 	@Override
 	public double calcRouteTravelTime(AnalyticalModelNetwork network, Tuple<Double, Double> timeBean,
-			LinkedHashMap<String, Double> params, LinkedHashMap<String, Double> anaParams) {
+			Map<String, Double> params, Map<String, Double> anaParams) {
 		double travelTime = 0.;
 		for(Id<Link> link: linkTravelled) {
 			travelTime += ((AnalyticalModelLink) network.getLinks().get(link)).getLinkTravelTime(timeBean, params, anaParams);
@@ -214,7 +214,7 @@ public class ITransitRoute implements AnalyticalModelTransitRoute {
 	}
 
 	@Override
-	public double getRouteWaitingTime(LinkedHashMap<String, Double> anaParams, AnalyticalModelNetwork network) {
+	public double getRouteWaitingTime(Map<String, Double> anaParams, AnalyticalModelNetwork network) {
 		double waitingTime = 0.0;
 		for(TransitWaitLink waitLink: waitingLinks) {
 			waitingTime += waitLink.getWaitingTime(anaParams);

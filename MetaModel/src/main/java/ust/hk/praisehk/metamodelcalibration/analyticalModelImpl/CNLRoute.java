@@ -3,6 +3,7 @@ package ust.hk.praisehk.metamodelcalibration.analyticalModelImpl;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
@@ -43,15 +44,15 @@ public class CNLRoute implements AnalyticalModelRoute{
 	}
 
 	@Override
-	public double getTravelTime(AnalyticalModelNetwork network, Tuple<Double,Double> timeBean, LinkedHashMap<String,Double> params, 
-			LinkedHashMap<String,Double> anaParams) {
+	public double getTravelTime(AnalyticalModelNetwork network, Tuple<Double,Double> timeBean, 
+			Map<String,Double> params, Map<String, Double> anaParmas) {
 		double travelTime = 0.;
 		for(int i = 0; i < this.links.size(); i++) {
 			Link thisLink = network.getLinks().get(this.links.get(i));
 			if(thisLink instanceof CNLLinkToLink && i < this.links.size() - 1) {
-				travelTime += ((CNLLinkToLink)thisLink).getLinkToLinkTravelTime(this.links.get(i+1), timeBean, params, anaParams);
+				travelTime += ((CNLLinkToLink)thisLink).getLinkToLinkTravelTime(this.links.get(i+1), timeBean, params, anaParmas);
 			}else {
-				travelTime += ((CNLLink)thisLink).getLinkTravelTime(timeBean,params,anaParams);
+				travelTime += ((CNLLink)thisLink).getLinkTravelTime(timeBean,params,anaParmas);
 			}
 			if(travelTime > 2e6) {
 				return 2e6;
@@ -72,7 +73,7 @@ public class CNLRoute implements AnalyticalModelRoute{
 	 *  
 	 */
 	@Override
-	public double calcRouteUtility(LinkedHashMap<String, Double> params,LinkedHashMap<String, Double> anaParmas,AnalyticalModelNetwork network,Tuple<Double,Double>timeBean) {
+	public double calcRouteUtility(Map<String, Double> params,Map<String, Double> anaParmas,AnalyticalModelNetwork network,Tuple<Double,Double>timeBean) {
 		
 		double MUTravelTime=params.get(CNLSUEModel.MarginalUtilityofTravelCarName)/3600.0-params.get(CNLSUEModel.MarginalUtilityofPerformName)/3600.0;
 		double ModeConstant;

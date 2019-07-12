@@ -3,7 +3,6 @@ package ust.hk.praisehk.metamodelcalibration.analyticalModelImpl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -158,7 +157,7 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 	}
 	
 	@Override
-	public double calcRouteUtility(LinkedHashMap<String, Double> params,LinkedHashMap<String, Double> anaParams,AnalyticalModelNetwork network,
+	public double calcRouteUtility(Map<String, Double> params,Map<String, Double> anaParams,AnalyticalModelNetwork network,
 			Map<String,FareCalculator>farecalc, TransferDiscountCalculator tdc, Tuple<Double,Double>timeBean) {
 		
 		double MUTravelTime=params.get(CNLSUEModel.MarginalUtilityofTravelptName)/3600.0-params.get(CNLSUEModel.MarginalUtilityofPerformName)/3600.0;
@@ -254,7 +253,8 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 	}
 
 	@Override
-	public double calcRouteTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams) {
+	public double calcRouteTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean, 
+			Map<String,Double>params, Map<String,Double>anaParams) {
 		double routeTravelTime=0;
 		for(CNLTransitDirectLink dlink:this.directLinks) {
 			routeTravelTime+=dlink.getLinkTravelTime(network,timeBean,params,anaParams);
@@ -268,7 +268,7 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 	}
 
 	@Override
-	public double getRouteWaitingTime(LinkedHashMap<String,Double> anaParams,AnalyticalModelNetwork network) {
+	public double getRouteWaitingTime(Map<String,Double> anaParams,AnalyticalModelNetwork network) {
 		double routeWaitingTime=0;
 		for(CNLTransitTransferLink tlink:this.transferLinks) {
 			routeWaitingTime+=tlink.getWaitingTime(anaParams,network);

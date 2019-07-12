@@ -1,6 +1,6 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModel;
 
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
@@ -72,7 +72,7 @@ public abstract class TransitTransferLink extends TransitLink{
 	 * @return: waiting time in seconds
 	 * 
 	 */
-	public abstract double getWaitingTime(LinkedHashMap<String,Double> anaParams,AnalyticalModelNetwork Network);
+	public abstract double getWaitingTime(Map<String,Double> anaParams,AnalyticalModelNetwork Network);
 	
 	
 	

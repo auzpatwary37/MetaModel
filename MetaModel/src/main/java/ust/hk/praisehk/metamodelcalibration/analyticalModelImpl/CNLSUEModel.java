@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -110,9 +109,9 @@ public class CNLSUEModel implements AnalyticalModel{
 	}
 
 	protected Map<String,Double> consecutiveSUEErrorIncrease=new ConcurrentHashMap<>();
-	protected LinkedHashMap<String,Double> AnalyticalModelInternalParams=new LinkedHashMap<>();
-	protected LinkedHashMap<String,Double> Params=new LinkedHashMap<>();
-	private LinkedHashMap<String,Tuple<Double,Double>> AnalyticalModelParamsLimit=new LinkedHashMap<>();
+	protected Map<String,Double> AnalyticalModelInternalParams=new HashMap<>();
+	protected Map<String,Double> Params=new HashMap<>();
+	private Map<String,Tuple<Double,Double>> AnalyticalModelParamsLimit=new HashMap<>();
 	
 	
 	private double alphaMSA=1.9;//parameter for decreasing MSA step size
@@ -231,7 +230,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		this.Params.put(CNLSUEModel.CapacityMultiplierName, 1.0);
 	}
 	
-	public void setDefaultParameters(LinkedHashMap<String,Double> params) {
+	public void setDefaultParameters(Map<String,Double> params) {
 		for(String s:params.keySet()) {
 			this.Params.put(s, params.get(s));
 		}
@@ -396,7 +395,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	 */
 	
 	@Override
-	public Map<String,Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params, 
+	public Map<String,Map<Id<Link>, Double>> perFormSUE(Map<String, Double> params, 
 			MeasurementDataContainer mdc) {
 		if(!(this.Params.keySet()).containsAll(params.keySet())) {
 			logger.error("The parameters key do not match with the default parameter keys. Invalid Parameter!! Did you send the wrong parameter format?");
@@ -414,9 +413,9 @@ public class CNLSUEModel implements AnalyticalModel{
 	 */
 	public AnalyticalModelODpairs generateMATSimRoutes(double defaultPtModeRatio, int numberOfIterations, 
 			int numOfRoutes) {
-		LinkedHashMap<String,Double> params=new LinkedHashMap<>(this.Params);
-		LinkedHashMap<String,Double> inputParams=new LinkedHashMap<>(params);
-		LinkedHashMap<String,Double> inputAnaParams=new LinkedHashMap<>(this.AnalyticalModelInternalParams);
+		Map<String,Double> params=new HashMap<>(this.Params);
+		Map<String,Double> inputParams=new HashMap<>(params);
+		Map<String,Double> inputAnaParams=new HashMap<>(this.AnalyticalModelInternalParams);
 		Map<String,Map<Id<Link>,Double>> outputLinkFlow=new HashMap<>();
 		//this loop is for generating routeset
 		for(int j=0; j < numberOfIterations;j++) {
@@ -502,27 +501,27 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * @return
 	 */
 	@Override
-	public Map<String,Map<Id<Link>, Double>> perFormSUE(LinkedHashMap<String, Double> params, 
-			LinkedHashMap<String,Double> anaParams, MeasurementDataContainer mdc) {
+	public Map<String,Map<Id<Link>, Double>> perFormSUE(Map<String, Double> params, 
+			Map<String,Double> anaParams, MeasurementDataContainer mdc) {
 		this.resetCarDemand();
 		this.totalFareCollected.clear(); //Reset the fare collected
 		
-		LinkedHashMap<String,Double> inputParams=new LinkedHashMap<>(params);
-		LinkedHashMap<String,Double> inputAnaParams=new LinkedHashMap<>(anaParams);
+		Map<String,Double> inputParams=new HashMap<>(params);
+		Map<String,Double> inputAnaParams=new HashMap<>(anaParams);
 		//Loading missing parameters from the default values		
 		Map<String,Map<Id<Link>,Double>> outputLinkFlow=new HashMap<>();
 		
 		//Checking and updating for the parameters 
 		for(Entry<String,Double> e:this.Params.entrySet()) {
 			if(!params.containsKey(e.getKey())) {
-				params.put(e.getKey(), e.getValue());
+				inputParams.put(e.getKey(), e.getValue());
 			}
 		}
 		
 		//Checking and updating for the analytical model parameters
 		for(Entry<String,Double> e:this.AnalyticalModelInternalParams.entrySet()) {
 			if(!anaParams.containsKey(e.getKey())) {
-				anaParams.put(e.getKey(), e.getValue());
+				inputAnaParams.put(e.getKey(), e.getValue());
 			}
 		}
 		
@@ -530,7 +529,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		Thread[] threads=new Thread[this.timeBeans.size()];
 		int i=0;
 		for(String timeBeanId:this.timeBeans.keySet()) {
-			threads[i]=new Thread(new SUERunnable(this,timeBeanId,params,anaParams),timeBeanId);
+			threads[i]=new Thread(new SUERunnable(this,timeBeanId,inputParams,inputAnaParams),timeBeanId);
 			i++;
 			outputLinkFlow.put(timeBeanId, new HashMap<Id<Link>, Double>());
 		}
@@ -594,12 +593,12 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * This method does single OD network loading of only car demand.
 	 * 
 	 * @param ODpairId
-	 * @param anaParams 
+	 * @param internalParams 
 	 * @return Return the link flows
 	 */
 	
 	protected Map<Id<Link>, Map<Id<Link>,Double>> networkLoadingCarSingleOD(Id<AnalyticalModelODpair> ODpairId, String timeBeanId, double iteration,
-			LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
+			Map<String, Double> params2, Map<String, Double> internalParams){
 		
 		AnalyticalModelODpair odpair=this.odPairs.getODpairset().get(ODpairId);
 		List<AnalyticalModelRoute> routes=odpair.getRoutes();
@@ -612,7 +611,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			double utility=0;
 			
 			if(iteration>1) { //We only calculate the utility for all
-				utility = route.calcRouteUtility(params, anaParams,this.networks.get(timeBeanId),this.timeBeans.get(timeBeanId));
+				utility = route.calcRouteUtility(params2, internalParams,this.networks.get(timeBeanId),this.timeBeans.get(timeBeanId));
 				//newUtility.put(route.getRouteId(), utility);
 				//oldUtility.put(route.getRouteId(), odpair.getRouteUtility(timeBeanId).get(route.getRouteId()));
 			}else {
@@ -704,11 +703,11 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * It will also update the fare collected.
 	 * @param ODpairId
 	 * @param timeBeanId
-	 * @param anaParams 
+	 * @param internalParams 
 	 * @return
 	 */
 	protected HashMap<Id<TransitLink>,Double> networkLoadingTransitSingleOD(Id<AnalyticalModelODpair> ODpairId, String timeBeanId,
-			int iteration, LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
+			int iteration, Map<String, Double> params2, Map<String, Double> internalParams){
 		List<AnalyticalModelTransitRoute> routes=this.odPairs.getODpairset().get(ODpairId).getTrRoutes(this.timeBeans,timeBeanId, iteration);
 		double totalUtility = 0;
 		HashMap<Id<AnalyticalModelTransitRoute>,Double> routeFlows=new HashMap<>();
@@ -716,7 +715,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			for(AnalyticalModelTransitRoute r:routes){
 				double u;
 				if(iteration>1) {
-					u=r.calcRouteUtility(params, anaParams,
+					u=r.calcRouteUtility(params2, internalParams,
 						this.networks.get(timeBeanId), this.fareCalculator, this.tdc, 
 						this.timeBeans.get(timeBeanId));
 					
@@ -820,14 +819,14 @@ public class CNLSUEModel implements AnalyticalModel{
 	}
 	/**
 	 * This method should do the network loading for car
-	 * @param anaParams 
+	 * @param internalParams 
 	 * @return
 	 */
-	protected HashMap<Id<Link>,Double> performCarNetworkLoading(String timeBeanId, double iteration, LinkedHashMap<String,Double> params, LinkedHashMap<String, Double> anaParams){
+	protected HashMap<Id<Link>,Double> performCarNetworkLoading(String timeBeanId, double iteration, Map<String, Double> params2, Map<String, Double> internalParams){
 		HashMap<Id<Link>,Double> linkVolume=new HashMap<>();
 		for(Id<AnalyticalModelODpair> odpairId:this.odPairs.getODpairset().keySet()){
 			if(this.odPairs.getODpairset().get(odpairId).getRoutes()!=null && this.carDemand.get(timeBeanId).get(odpairId)!=0) {
-				Map<Id<Link>,Map<Id<Link>,Double>> oDlinkFlowVolume = this.networkLoadingCarSingleOD(odpairId, timeBeanId, iteration, params, anaParams);
+				Map<Id<Link>,Map<Id<Link>,Double>> oDlinkFlowVolume = this.networkLoadingCarSingleOD(odpairId, timeBeanId, iteration, params2, internalParams);
 				for(Id<Link> linkId : oDlinkFlowVolume.keySet()){
 					if(linkVolume.containsKey(linkId)){
 						linkVolume.put(linkId, linkVolume.get(linkId) + oDlinkFlowVolume.get(linkId).values().stream().mapToDouble(Double::doubleValue).sum());
@@ -845,8 +844,8 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * @param anaParams 
 	 * @return
 	 */
-	protected Map<Id<Link>, Map<Id<Link>,Double>> performParallelLinkToLinkCarNetworkLoading(String timeBeanId, double iteration, LinkedHashMap<String,Double> params, 
-			LinkedHashMap<String, Double> anaParams){
+	protected Map<Id<Link>, Map<Id<Link>,Double>> performParallelLinkToLinkCarNetworkLoading(String timeBeanId, double iteration, 
+			Map<String,Double> params, Map<String, Double> anaParams){
 		double time = System.nanoTime();
 		Map<Id<Link>, Map<Id<Link>,Double>> linkToLinkVolume=new ConcurrentHashMap<>();
 		this.odPairs.getODpairset().keySet().parallelStream().forEach(odpairId->{
@@ -874,8 +873,8 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * @param anaParams 
 	 * @return
 	 */
-	protected Map<Id<Link>, Map<Id<Link>,Double>> performLinkToLinkCarNetworkLoading(String timeBeanId, double iteration, LinkedHashMap<String,Double> params, 
-			LinkedHashMap<String, Double> anaParams){
+	protected Map<Id<Link>, Map<Id<Link>,Double>> performLinkToLinkCarNetworkLoading(String timeBeanId, double iteration, 
+			Map<String,Double> params, Map<String, Double> anaParams){
 		double time = System.nanoTime();
 		Map<Id<Link>, Map<Id<Link>,Double>> linkToLinkVolume=new HashMap<>();
 		for(Id<AnalyticalModelODpair> odpairId:this.odPairs.getODpairset().keySet()){
@@ -898,8 +897,8 @@ public class CNLSUEModel implements AnalyticalModel{
 		return linkToLinkVolume;
 	}
 	
-	protected HashMap<Id<TransitLink>,Double> performParallelTransitNetworkLoading(String timeBeanId, int counter, LinkedHashMap<String, Double> params, 
-			LinkedHashMap<String, Double> anaParams){
+	protected HashMap<Id<TransitLink>,Double> performParallelTransitNetworkLoading(String timeBeanId, int counter, 
+			Map<String, Double> params, Map<String, Double> anaParams){
 		double time = System.nanoTime();
 		ConcurrentHashMap<Id<TransitLink>,Double> transitLinkVolume=new ConcurrentHashMap<>();
 		this.odPairs.getODpairset().keySet().parallelStream().forEach(odpairId->{
@@ -923,12 +922,12 @@ public class CNLSUEModel implements AnalyticalModel{
 	
 	/**
 	 * This method should do the network loading for transit
-	 * @param params 
-	 * @param anaParams 
+	 * @param params2 
+	 * @param internalParams 
 	 * @return
 	 */
-	protected HashMap<Id<TransitLink>,Double> performTransitNetworkLoading(String timeBeanId, int counter, LinkedHashMap<String, Double> params, 
-			LinkedHashMap<String, Double> anaParams){
+	protected HashMap<Id<TransitLink>,Double> performTransitNetworkLoading(String timeBeanId, int counter, Map<String, Double> params2, 
+			Map<String, Double> internalParams){
 		double time = System.nanoTime();
 		this.totalFareCollected.put(timeBeanId, 0.);
 		HashMap<Id<TransitLink>,Double> transitLinkVolume=new HashMap<>();
@@ -936,7 +935,7 @@ public class CNLSUEModel implements AnalyticalModel{
 			double totalDemand=this.demand.get(timeBeanId).get(odpairId);
 			double carDemand=this.carDemand.get(timeBeanId).get(odpairId);
 			if((totalDemand-carDemand)!=0) { //Load only if there is something not car demand.
-				HashMap<Id<TransitLink>,Double> transitLinkvolumes = this.networkLoadingTransitSingleOD(odpairId,timeBeanId,counter,params,anaParams);
+				HashMap<Id<TransitLink>,Double> transitLinkvolumes = this.networkLoadingTransitSingleOD(odpairId,timeBeanId,counter,params2,internalParams);
 				for(Id<TransitLink> linkId:transitLinkvolumes.keySet()){
 					if(transitLinkVolume.containsKey(linkId)){
 						transitLinkVolume.put(linkId, transitLinkVolume.get(linkId)+transitLinkvolumes.get(linkId));
@@ -1107,17 +1106,17 @@ public class CNLSUEModel implements AnalyticalModel{
 	}
 	/**
 	 * This method perform modal Split
-	 * @param params
-	 * @param anaParams
+	 * @param params2
+	 * @param internalParams
 	 * @param timeBeanId
 	 */
-	protected void performModalSplit(LinkedHashMap<String,Double>params,LinkedHashMap<String,Double>anaParams,String timeBeanId) {
-		double modeMiu=anaParams.get(CNLSUEModel.ModeMiuName);
+	protected void performModalSplit(Map<String, Double> params2,Map<String, Double> internalParams,String timeBeanId) {
+		double modeMiu=internalParams.get(CNLSUEModel.ModeMiuName);
 		for(AnalyticalModelODpair odPair:this.odPairs.getODpairset().values()){
 			double demand=this.demand.get(timeBeanId).get(odPair.getODpairId());
 			if(demand!=0) { 
-				double carUtility=odPair.getExpectedMaximumCarUtility(params, anaParams, timeBeanId);
-				double transitUtility=odPair.getExpectedMaximumTransitUtility(params, anaParams, timeBeanId);
+				double carUtility=odPair.getExpectedMaximumCarUtility(params2, internalParams, timeBeanId);
+				double transitUtility=odPair.getExpectedMaximumTransitUtility(params2, internalParams, timeBeanId);
 				
 				if(carUtility==Double.NEGATIVE_INFINITY||transitUtility==Double.POSITIVE_INFINITY||
 						Math.exp(transitUtility*modeMiu)==Double.POSITIVE_INFINITY) {
@@ -1147,7 +1146,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * @param timeBeanId
 	 * @param defaultptModeshare
 	 */
-	protected void applyModalSplit(LinkedHashMap<String,Double> params, LinkedHashMap<String,Double> anaParams, String timeBeanId, double defaultptModeshare) {
+	protected void applyModalSplit(Map<String,Double> params, Map<String,Double> anaParams, String timeBeanId, double defaultptModeshare) {
 		if(defaultptModeshare<0 || defaultptModeshare>1 ) {
 			throw new IllegalArgumentException("default pt mode ratio cannot be larger than 100");
 		}
@@ -1170,7 +1169,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	
 	@Override
 	public Map<Integer, Measurements> calibrateInternalParams(Map<Integer,Measurements> simMeasurements, 
-			Map<Integer,LinkedHashMap<String,Double>>params, LinkedHashMap<String,Double> initialParam, int currentParamNo) {
+			Map<Integer,Map<String,Double>>params, Map<String,Double> initialParam, int currentParamNo) {
 		double[] x=new double[initialParam.size()];
 
 		int j=0;
@@ -1239,13 +1238,13 @@ public class CNLSUEModel implements AnalyticalModel{
 	 * @param anaParams: Analytical model Parameters
 	 * @param timeBeanId
 	 */
-	public void singleTimeBeanTA(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
+	public void singleTimeBeanTA(Map<String, Double> params2,Map<String, Double> internalParams,String timeBeanId) {
 		boolean shouldStop=false;
 		for(int i=1;i<500;i++) {
 			//for(this.car)
 			//ConcurrentHashMap<String,HashMap<Id<CNLODpair>,Double>>demand=this.Demand;
-			HashMap<Id<Link>,Double> linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params,anaParams); //Load the car network, and calculate utilities if it is not first iteration
-			HashMap<Id<TransitLink>, Double> linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params,anaParams);
+			HashMap<Id<Link>,Double> linkCarVolume=this.performCarNetworkLoading(timeBeanId,i,params2,internalParams); //Load the car network, and calculate utilities if it is not first iteration
+			HashMap<Id<TransitLink>, Double> linkTransitVolume=this.performTransitNetworkLoading(timeBeanId,i,params2,internalParams);
 			shouldStop=this.checkConvergence(linkCarVolume, linkTransitVolume, timeBeanId,i);
 			this.updateLinkVolume(linkCarVolume, linkTransitVolume, i, timeBeanId);
 			if(i==1 && shouldStop==true) {
@@ -1261,7 +1260,7 @@ public class CNLSUEModel implements AnalyticalModel{
 				}
 			}
 			if(shouldStop) {break;}
-			this.performModalSplit(params, anaParams, timeBeanId);
+			this.performModalSplit(params2, internalParams, timeBeanId);
 			
 		}
 		
@@ -1271,14 +1270,14 @@ public class CNLSUEModel implements AnalyticalModel{
 
 /**
  * This function is for enoch's testing
- * @param params
- * @param anaParams
+ * @param params2
+ * @param internalParams
  * @param timeBeanId
  * @param defaultModeRatio: pt mode ratio in between 0 to 1
  * @throws ExecutionException 
  * @throws InterruptedException 
  */
-	public void singleTimeBeanTA(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId,double defaultModeRatio) throws InterruptedException, ExecutionException {
+	public void singleTimeBeanTA(Map<String, Double> params2,Map<String, Double> internalParams,String timeBeanId,double defaultModeRatio) throws InterruptedException, ExecutionException {
 		boolean shouldStop=false;
 		boolean carConverged = false;
 		HashMap<Id<TransitLink>, Double> linkTransitVolume = new HashMap<>();
@@ -1293,13 +1292,13 @@ public class CNLSUEModel implements AnalyticalModel{
 //		    		CompletableFuture.supplyAsync(() -> performParallelTransitNetworkLoading(timeBeanId,iter[0],params,anaParams));
 			
 			if(!carConverged) {
-				linkToLinkCarVolume = performParallelLinkToLinkCarNetworkLoading(timeBeanId,i,params,anaParams);
+				linkToLinkCarVolume = performParallelLinkToLinkCarNetworkLoading(timeBeanId,i,params2,internalParams);
 				//HashMap<Id<TransitLink>, Double> linkTransitVolume = transitLoad2.get();
 				linkTransitVolume.clear();
 				shouldStop = this.checkConvergence(convertl2lToLink(linkToLinkCarVolume), linkTransitVolume, timeBeanId,i);
 				this.updateLinkToLinkVolume(linkToLinkCarVolume, linkTransitVolume, i, timeBeanId);
 			}
-			linkTransitVolume = performParallelTransitNetworkLoading(timeBeanId,i,params,anaParams);
+			linkTransitVolume = performParallelTransitNetworkLoading(timeBeanId,i,params2,internalParams);
 			if(shouldStop) {
 				carConverged = true;
 				shouldStop = this.checkConvergence(convertl2lToLink(linkToLinkCarVolume), linkTransitVolume, timeBeanId,i);
@@ -1321,14 +1320,14 @@ public class CNLSUEModel implements AnalyticalModel{
 				}
 			}
 			if(shouldStop) {break;}
-			this.applyModalSplit(params, anaParams, timeBeanId, defaultModeRatio);
+			this.applyModalSplit(params2, internalParams, timeBeanId, defaultModeRatio);
 		}
 		
 		
 	}
 	
 	@Deprecated
-	public void singleTimeBeanTAModeOut(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
+	public void singleTimeBeanTAModeOut(Map<String, Double> params,Map<String,Double> anaParams,String timeBeanId) {
 		HashMap<Integer,HashMap<Id<TransitLink>, Double>> linkTransitVolumeIteration;
 		HashMap<Integer,HashMap<Id<Link>,Double>> linkCarVolumeIteration;
 		
@@ -1354,7 +1353,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		
 	}
 	@Deprecated
-	public void singleTimeBeanTAOut(LinkedHashMap<String, Double> params,LinkedHashMap<String,Double> anaParams,String timeBeanId) {
+	public void singleTimeBeanTAOut(Map<String, Double> params,Map<String,Double> anaParams,String timeBeanId) {
 		HashMap<Id<TransitLink>, Double> linkTransitVolume=new HashMap<>();
 		HashMap<Id<Link>,Double> linkCarVolume=new HashMap<>();
 		boolean shouldStop=false;
@@ -1402,7 +1401,7 @@ public class CNLSUEModel implements AnalyticalModel{
 //		return Params;
 //	}
 
-	public LinkedHashMap<String, Double> getAnalyticalModelInternalParams() {
+	public Map<String, Double> getAnalyticalModelInternalParams() {
 		return AnalyticalModelInternalParams;
 	}
 	
@@ -1417,7 +1416,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		fw.close();
 	}
 
-	public LinkedHashMap<String, Tuple<Double, Double>> getAnalyticalModelParamsLimit() {
+	public Map<String, Tuple<Double, Double>> getAnalyticalModelParamsLimit() {
 		return AnalyticalModelParamsLimit;
 	}
 
@@ -1701,10 +1700,10 @@ class RouteGenerationRunnable implements Runnable{
 class SUERunnable implements Runnable{
 
 	private CNLSUEModel Model;
-	private LinkedHashMap<String,Double> params;
-	private LinkedHashMap<String, Double> internalParams;
+	private Map<String,Double> params;
+	private Map<String, Double> internalParams;
 	private final String timeBeanId;
-	public SUERunnable(CNLSUEModel CNLMod,String timeBeanId,LinkedHashMap<String,Double> params,LinkedHashMap<String,Double>IntParams) {
+	public SUERunnable(CNLSUEModel CNLMod,String timeBeanId,Map<String,Double> params,Map<String,Double>IntParams) {
 		this.Model=CNLMod;
 		this.timeBeanId=timeBeanId;
 		this.params=params;
@@ -1732,11 +1731,11 @@ class SUERunnable implements Runnable{
 class SUERunnableEnoch implements Runnable{
 
 	private CNLSUEModel Model;
-	private LinkedHashMap<String,Double> params;
-	private LinkedHashMap<String, Double> internalParams;
+	private Map<String,Double> params;
+	private Map<String, Double> internalParams;
 	private final String timeBeanId;
 	private double defaultPtModeSplit;
-	public SUERunnableEnoch(CNLSUEModel CNLMod,String timeBeanId,LinkedHashMap<String,Double> params,LinkedHashMap<String,Double>IntParams,double defaultPtModeSplit) {
+	public SUERunnableEnoch(CNLSUEModel CNLMod,String timeBeanId,Map<String,Double> params,Map<String,Double>IntParams,double defaultPtModeSplit) {
 		this.Model=CNLMod;
 		this.timeBeanId=timeBeanId;
 		this.params=params;
