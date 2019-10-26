@@ -63,7 +63,7 @@ public class ModalToMATSim {
 		network = scenario.getNetwork();
 		PlansCalcRouteConfigGroup cg = (PlansCalcRouteConfigGroup) scenario.getConfig().getModules().get("planscalcroute");
 		walkRouter = new TeleportationRoutingModule(TransportMode.transit_walk, 
-				scenario, cg.getTeleportedModeSpeeds().get(TransportMode.walk),
+				scenario.getPopulation().getFactory(), cg.getTeleportedModeSpeeds().get(TransportMode.walk),
 				cg.getBeelineDistanceFactors().get(TransportMode.walk)	);
 		odPairSet = model.getODPairset();
 	}
