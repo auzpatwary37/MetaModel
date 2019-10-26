@@ -19,7 +19,6 @@ import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.router.util.LeastCostPathCalculator.Path;
 import org.matsim.core.scenario.ScenarioUtils;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.facilities.ActivityFacility;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.vehicles.VehicleType;
@@ -27,6 +26,8 @@ import com.google.inject.Inject;
 
 import dynamicTransitRouter.TransitRouterFareDynamicImpl;
 import ust.hk.praisehk.metamodelcalibration.transit.ITransitRoute;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 /**
  * This is a self sufficient implementation of OD pair class.
@@ -736,7 +737,7 @@ public class AnalyticalModelODpair {
 			for(String timeBeanId:timeBeans.keySet()) {
 				ArrayList<AnalyticalModelTransitRoute> timeBasedTrRoutes=new ArrayList<>();
 				for(AnalyticalModelTransitRoute tr:this.finalTrRoutes) {
-					AnalyticalModelTransitRoute trnew=tr.cloneRoute(); //TODO: There is a bug that it cannot give the correct link for timeBin
+					AnalyticalModelTransitRoute trnew = tr.cloneRoute(); //TODO: There is a bug that it cannot give the correct link for timeBin
 					trnew.calcCapacityHeadway(timeBeans, timeBeanId);
 					//It would be added if it is a transit route.
 					if(trnew instanceof ITransitRoute || (Double)tr.getRouteCapacity().get(timeBeanId)!=0) {

@@ -15,7 +15,6 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.scenario.ScenarioUtils;
-import org.matsim.core.utils.collections.Tuple;
 import org.xml.sax.SAXException;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
@@ -27,6 +26,7 @@ import dynamicTransitRouter.transfer.AllPTTransferDiscount;
 import dynamicTransitRouter.transfer.TransferDiscountCalculator;
 import ust.hk.praisehk.metamodelcalibration.Utils.ModalToMATSim;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModel;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public class testingMain {
 	public static void main(String[] args) throws SAXException, IOException, ParserConfigurationException {

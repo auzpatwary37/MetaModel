@@ -27,7 +27,6 @@ import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.router.TeleportationRoutingModule;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.facilities.FacilitiesUtils;
 import org.matsim.facilities.Facility;
 import org.matsim.pt.PtConstants;
@@ -42,6 +41,8 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelRoute
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelTransitRoute;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModel;
 import ust.hk.praisehk.metamodelcalibration.transit.ITransitRoute;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 /**
  * This class is designed to put the result of the modal to the MATSim population

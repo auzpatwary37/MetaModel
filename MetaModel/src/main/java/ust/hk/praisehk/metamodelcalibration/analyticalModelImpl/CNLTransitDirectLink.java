@@ -1,12 +1,9 @@
 package ust.hk.praisehk.metamodelcalibration.analyticalModelImpl;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
-import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.Departure;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
@@ -18,8 +15,7 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitDirectLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
-
-
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 /**
  * 
@@ -66,11 +62,20 @@ public class CNLTransitDirectLink extends TransitDirectLink{
 	 * calculates the link travel time 
 	 */
 	@Override
-	public double getLinkTravelTime(AnalyticalModelNetwork network,Tuple<Double,Double>timeBean,Map<String, Double> params,Map<String, Double> anaParams) {
+	public double getLinkTravelTime(AnalyticalModelNetwork network, Tuple<Double,Double>timeBean, Map<String, Double> params,
+			Map<String, Double> anaParams) {
 		double travelTime=0;
-		for(Id<Link> lId:this.linkList) {
-			travelTime+=((AnalyticalModelLink)network.getLinks().get(lId)).getLinkTravelTime(timeBean,params,anaParams);
-		}
+		for(int i = 0; i < this.linkList.size(); i++) {
+			Link thisLink = network.getLinks().get(this.linkList.get(i));
+			if(thisLink instanceof CNLLinkToLink && i < this.linkList.size() - 1) {
+				travelTime += ((CNLLinkToLink)thisLink).getLinkToLinkTravelTime(this.linkList.get(i+1), timeBean, params, anaParams);
+			}else {
+				travelTime += ((CNLLink)thisLink).getLinkTravelTime(timeBean,params, anaParams);
+			}
+			if(travelTime > 2e5) {
+				return 2e5;
+			}
+		}  
 		
 		return travelTime;
 	}

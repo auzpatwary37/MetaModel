@@ -5,10 +5,10 @@ import java.util.Map;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
-import org.matsim.core.utils.collections.Tuple;
 
 import ust.hk.praisehk.metamodelcalibration.Utils.TimeBeanUtils;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpair;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public class TimeSpecificODPair extends AnalyticalModelODpair {
 	private final String timeBin;

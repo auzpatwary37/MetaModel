@@ -10,13 +10,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
-import org.matsim.core.utils.collections.Tuple;
 
 import cz.cvut.fit.jcool.core.Hessian;
 import cz.cvut.fit.jcool.core.Point;
 import cz.cvut.fit.jcool.utils.CentralDifferenceHessian;
 import de.xypron.jcobyla.Cobyla;
 import de.xypron.jcobyla.CobylaExitStatus;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;

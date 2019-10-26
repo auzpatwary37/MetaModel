@@ -16,7 +16,6 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.NetworkFactory;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.utils.collections.QuadTree;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.misc.Counter;
 import org.matsim.core.utils.misc.Time;
@@ -30,6 +29,7 @@ import org.matsim.vehicles.Vehicles;
 
 import dynamicTransitRouter.TransitStop;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public class TransitNetworkHR implements Network{
 

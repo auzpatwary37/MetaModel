@@ -14,7 +14,8 @@ import java.util.Set;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
+
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 /**
  * A simplified class for holding measurements 
@@ -29,8 +30,6 @@ public class Measurements {
 	private final Map<String,Tuple<Double,Double>> timeBean;
 	private Map<Id<Measurement>,Measurement> measurements=new HashMap<>();
 	
-	private double busProfit;
-	
 	private Measurements(Map<String,Tuple<Double,Double>> timeBean) {
 		this.timeBean=timeBean;
 	}
@@ -42,6 +41,16 @@ public class Measurements {
 	public void createAnadAddLinkMeasurement(String measurementId) {
 		Measurement m=new LinkMeasurement(measurementId,this.timeBean);
 		this.measurements.put(m.getId(), m);
+	}
+	
+	/**
+	 * It is a convenient function to add the fare measurements to the measurements
+	 */
+	public void initializeFareMeasurements() {
+		Measurement busMeasurement = new FareMeasurement(FareMeasurement.busFareName, "bus", this.timeBean);
+		Measurement mtrMeasurement = new FareMeasurement(FareMeasurement.mtrFareName, "train", this.timeBean);
+		this.measurements.put(busMeasurement.getId(), busMeasurement);
+		this.measurements.put(mtrMeasurement.getId(), mtrMeasurement);
 	}
 	
 	protected void addMeasurement(Measurement m) {
@@ -61,28 +70,24 @@ public class Measurements {
 	 * @param m The Id of the measurement we want
 	 * @return
 	 */
-	public Map<String,Double> getVolumes(Id<Measurement> mId){
-		
-		Map<String,Double> volumes = ((LinkMeasurement) measurements.get(mId)).getVolumes();
-		if(volumes == null) {
+	public Map<String,Double> getValues(Id<Measurement> mId){
+		Map<String,Double> values = measurements.get(mId).getValues();
+		if(values == null) {
 			throw new RuntimeException("The volumes is null!");
 		}
-		return volumes;
+		return values;
 	}
 	
 	/**
-	 * It put a volume inside the measurement
-	 * @param mId
+	 * It put a value inside a measurement
+	 * @param mId The measurement Id
 	 * @param timeBeanId
-	 * @param volume
+	 * @param value The value to set
 	 */
-	public void addVolume(Id<Measurement> mId, String timeBeanId, double volume) {
-		((LinkMeasurement) measurements.get(mId)).addVolume(timeBeanId, volume);
+	public void setValue(Id<Measurement> mId, String timeBeanId, double value) {
+		measurements.get(mId).setValue(timeBeanId, value);
 	}
 	
-	public double getBusProfit() {
-		return busProfit;
-	}
 	
 	/**
 	 * Will deep clone the measurement and provide a new measurement exactly same as the current measurement 
@@ -94,29 +99,42 @@ public class Measurements {
 		for(Measurement mm: this.measurements.values()) {
 			m.addMeasurement(mm.clone());
 		}
-		m.busProfit = this.busProfit;
 		return m;
 	}
 	
-	public void updateMeasurements(Map<String,Map<Id<Link>,Double>> linkVolumes) {
+	public void updateLinkVolumes(Map<String,Map<Id<Link>,Double>> linkVolumes) {
 		for(Measurement m:this.measurements.values()) {
 			if(m instanceof LinkMeasurement)
 				((LinkMeasurement) m).updateLinkVolumes(linkVolumes);
 		}
 	}
 	
-	public void updateMeasurements(MeasurementDataContainer mdc) {
-		for(Measurement m:this.measurements.values()) {
-			if(m instanceof LinkMeasurement)
-				((LinkMeasurement) m).updateLinkVolumes(mdc.linkVolumes);
+	/**
+	 * This function put the bus and metro profit into respective measurements
+	 * @param busFareReceived
+	 * @param metroFareReceived
+	 */
+	public void setBusAndMetroProfit(Map<String, Double> busFareReceived, Map<String, Double> metroFareReceived) {
+		for(String timeBinId: busFareReceived.keySet()) {
+			this.measurements.get(Id.create(FareMeasurement.busFareName, Measurement.class))
+					.setValue(timeBinId, busFareReceived.get(timeBinId));
+			this.measurements.get(Id.create(FareMeasurement.mtrFareName, Measurement.class))
+			.setValue(timeBinId, metroFareReceived.get(timeBinId));
 		}
-		
-		this.busProfit = mdc.profit;
 	}
 	
-	public void setBusProfit(double profit) {
-		this.busProfit = profit;
-	}
+	/**
+	 * It should be useless for now, as the mdc can create its own measurements in the current design.
+	 * @param mdc
+	 */
+//	public void updateMeasurements(MeasurementDataContainer mdc) {
+//		for(Measurement m:this.measurements.values()) {
+//			if(m instanceof LinkMeasurement)
+//				((LinkMeasurement) m).updateLinkVolumes(mdc);
+//		}
+//		
+//		this.busProfit = mdc.profit;
+//	}
 	
 	/**
 	 * Will return a set containing all the links to count volume for 
@@ -141,13 +159,10 @@ public class Measurements {
 	public void writeCSVMeasurements(String fileLoc) {
 		try {
 			FileWriter fw=new FileWriter(new File(fileLoc),false);
-			fw.append("MeasurementId,timeId,PCUCount\n");
+			fw.append("MeasurementId,timeId,value\n");
 			for(Measurement m:this.measurements.values()) {
-				if(m instanceof LinkMeasurement) {
-					LinkMeasurement lm = (LinkMeasurement) m;
-					for(String timeId:lm.getVolumes().keySet())
-						fw.append(m.getId().toString()+","+timeId+","+lm.getVolumes().get(timeId)+"\n");
-				}
+				for(String timeId:m.getValues().keySet())
+					fw.append(m.getId().toString()+","+timeId+","+m.getValues().get(timeId)+"\n");
 			}
 			fw.flush();
 			fw.close();
@@ -170,7 +185,7 @@ public class Measurements {
 					this.createAnadAddLinkMeasurement(measurementId.toString());
 				}
 				String timeBeanId=part[1].trim();
-				((LinkMeasurement) this.measurements.get(measurementId)).addVolume(timeBeanId, Double.parseDouble(part[2].trim()));
+				this.measurements.get(measurementId).setValue(timeBeanId, Double.parseDouble(part[2].trim()));
 			}
 			bf.close();
 		} catch (FileNotFoundException e) {

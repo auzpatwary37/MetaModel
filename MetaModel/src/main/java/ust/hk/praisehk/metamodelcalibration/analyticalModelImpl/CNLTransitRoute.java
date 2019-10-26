@@ -12,7 +12,6 @@ import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Activity;
 import org.matsim.api.core.v01.population.Leg;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
@@ -24,11 +23,7 @@ import dynamicTransitRouter.transfer.TransferDiscountCalculator;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelTransitRoute;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
-
-
-
-
-
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 /**
  * 
@@ -48,7 +43,11 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 	private double routeTravelTime=0;
 	private double routeWalkingDistance=0;
 	private double routeWaitingTime=0;
-	private double routeFare=0;
+	private double routeFare=-1;
+	
+	private double busFare = -1;
+	private double MTRFare = -1;
+	
 	private ArrayList<CNLTransitDirectLink> directLinks=new ArrayList<>();
 	private ArrayList<CNLTransitTransferLink> transferLinks=new ArrayList<>();
 	private Map<Id<TransitLink>, TransitLink> trLinks=new HashMap<>();
@@ -169,18 +168,17 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 		double DistanceBasedMoneyCostWalk=params.get(CNLSUEModel.DistanceBasedMoneyCostWalkName);
 		double fare=this.getFare(transitSchedule, farecalc, tdc);
 		double travelTime=this.calcRouteTravelTime(network,timeBean,params,anaParams);
-		double walkTime=this.getRouteWalkingDistance()/1.4;
-		double walkDist=this.getRouteWalkingDistance();
+		double walkTime=routeWalkingDistance/1.4;
 		double waitingTime=this.getRouteWaitingTime(anaParams,network);
 		double distance=this.getRouteDistance(network);
 		double utility=0;
 		double MUTransfer=params.get(CNLSUEModel.UtilityOfLineSwitchName);
 		
 		utility=ModeConstant+
-				travelTime*MUTravelTime+
-				MUMoney*fare+
+				travelTime*MUTravelTime-
+				MUMoney*fare+ //The fare should be negative
 				MUWalkTime*walkTime+
-				MUMoney*DistanceBasedMoneyCostWalk*walkDist+
+				MUMoney*DistanceBasedMoneyCostWalk*routeWalkingDistance+
 				MUWaitingTime*waitingTime
 				+MUTransfer*(this.transferLinks.size()-1)
 				+MUDistance*distance*MUMoney;
@@ -190,66 +188,106 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 		return utility*anaParams.get(CNLSUEModel.LinkMiuName);
 	}
 	
-	
+	public void resetFare() {
+		this.routeFare = -1;
+	}
 
 	@Override
 	public double getFare(TransitSchedule ts, Map<String, FareCalculator> farecalc, TransferDiscountCalculator tdc) {
 		if(ts==null) {
 			ts=this.transitSchedule;
 		}
-		if(this.routeFare!=0) {
+		if(this.routeFare!=-1) {
 			return this.routeFare;
 		}
-		String StartStopIdTrain=null;
-		String EndStopIdTrain=null;
+		this.routeFare = 0; //Start from 0.
+		this.busFare = 0;
+		this.MTRFare = 0;
+		String startStopIdTrain=null;
+		String endStopIdTrain=null;
 		
 		Id<TransitLine> lastTLineId = null;
 		Id<TransitRoute> lastTRouteId = null;
 		String lastMode = null;
+		double lastFare = 0.;
 		
 		int k=0;
+		double interchangeDiscount = -1;
 		for(CNLTransitDirectLink dlink :this.directLinks) {
 			k++;
 			Id<TransitLine> tlineId = dlink.getLineId();
 			Id<TransitRoute> trouteId = dlink.getRouteId();
 			String mode = ts.getTransitLines().get(tlineId).getRoutes().get(trouteId).getTransportMode();
+			double thisFare = 0;
 			
 			//Handling the train fare
-			if(mode.equals("train")) {
-				if(StartStopIdTrain == null) {
-					StartStopIdTrain=dlink.getStartStopId(); //Train trip not yet started
+			if(mode.equals("train")) { //If it is a train trip, just store the start stop Id.
+				if(startStopIdTrain == null) {
+					startStopIdTrain=dlink.getStartStopId(); //Train trip not yet started
+					if(lastTLineId != null && interchangeDiscount == -1) { //If there is previous trip, try to enquire the transfer discount.
+						interchangeDiscount = tdc.getInterchangeDiscount(lastTLineId, tlineId, lastTRouteId, trouteId, lastMode, mode, 0, 0, 0, lastFare, thisFare);
+					}
 				}
-				EndStopIdTrain=dlink.getEndStopId();
-				if(k==this.directLinks.size()) {
-					MTRFareCalculator mtrFare=(MTRFareCalculator) farecalc.get("train");
-					this.routeFare=mtrFare.getMinFare(null, null, Id.create(StartStopIdTrain, TransitStopFacility.class),
-							Id.create(EndStopIdTrain, TransitStopFacility.class));
+				endStopIdTrain=dlink.getEndStopId(); //Store the end stop.
+				if(k == this.directLinks.size()) { //Already the last leg
+					MTRFareCalculator mtrFare = (MTRFareCalculator) farecalc.get("train");
+					double fare = mtrFare.getMinFare(null, null, Id.create(startStopIdTrain, TransitStopFacility.class),
+							Id.create(endStopIdTrain, TransitStopFacility.class));
+					if(fare > interchangeDiscount) { //It would only be charged if the interchange discount is lower
+						this.routeFare += fare;
+						this.MTRFare += fare;
+						this.routeFare -= interchangeDiscount;
+						this.MTRFare -= interchangeDiscount;
+					}
 				}
 			}else{//not a train trip leg, so two possibilities, train trip just ended in the previous trip or completely new trip
-				if(StartStopIdTrain!=null) {//train trip just ended, the fare will be added.
+				if(startStopIdTrain!=null) {//train trip just ended, the MTR fare will be added.
 					MTRFareCalculator mtrFare=(MTRFareCalculator) farecalc.get("train");
-					double lastFare = mtrFare.getMinFare(null, null, Id.create(StartStopIdTrain, TransitStopFacility.class),
-							Id.create(EndStopIdTrain, TransitStopFacility.class));
-					this.routeFare += lastFare;
-					StartStopIdTrain=null;
-					EndStopIdTrain=null;										
-					//now bus fare of the current trip is added	
-					TransitRoute tr=ts.getTransitLines().get(tlineId).getRoutes().get(trouteId);
-					double thisFare = farecalc.get(tr.getTransportMode()).getFares(trouteId, tlineId, 
-							Id.create(dlink.getStartStopId(), TransitStopFacility.class), Id.create(dlink.getEndStopId(), TransitStopFacility.class)).get(0);
-					this.routeFare += thisFare;
-					
-					//TODO: Handle the transfer time.
-					this.routeFare -= tdc.getInterchangeDiscount(lastTLineId, tlineId, lastTRouteId, trouteId, lastMode, mode, 0, 0, 0, lastFare, thisFare);
-				
-				}else {//only bus fare is added
-					TransitRoute tr=ts.getTransitLines().get(tlineId).getRoutes().get(trouteId);
-					this.routeFare+=farecalc.get(tr.getTransportMode()).getFares(trouteId, tlineId, 
-							Id.create(dlink.getStartStopId(), TransitStopFacility.class), Id.create(dlink.getEndStopId(), TransitStopFacility.class)).get(0);
+					lastFare = mtrFare.getMinFare(null, null, Id.create(startStopIdTrain, TransitStopFacility.class),
+							Id.create(endStopIdTrain, TransitStopFacility.class));
+					if(lastFare > interchangeDiscount) { //It would only be charged if the interchange discount is lower
+						this.routeFare += lastFare;
+						this.MTRFare += lastFare;
+						this.routeFare -= interchangeDiscount;
+						this.MTRFare -= interchangeDiscount;
+					}
+					startStopIdTrain=null;
+					endStopIdTrain=null;
 				}
+				FareCalculator thisLegFareCal = farecalc.get(mode);
+				thisFare = thisLegFareCal.getFares(trouteId, tlineId, Id.create(dlink.getStartStopId(), TransitStopFacility.class), 
+						Id.create(dlink.getEndStopId(), TransitStopFacility.class)).get(0);
+				interchangeDiscount = tdc.getInterchangeDiscount(lastTLineId, tlineId, lastTRouteId, trouteId, lastMode, mode, 0, 0, 0, lastFare, thisFare);
+				if(thisFare > interchangeDiscount) { //The fare collected would only be changed if the discount is smaller.
+					this.routeFare += thisFare;
+					this.routeFare -= interchangeDiscount;
+					if(mode.equals("bus")) {
+						this.busFare += thisFare;
+						this.busFare -= interchangeDiscount;
+					}
+				}
+				interchangeDiscount = -1;
 			}
+			lastTLineId = tlineId;
+			lastTRouteId = trouteId;
+			lastMode = mode;
+			lastFare = thisFare;
 		}
 		return this.routeFare;
+	}
+	
+	public double getBusFareCollected() {
+		if(busFare == -1) {
+			throw new RuntimeException("The bus fare is not yet processed!");
+		}
+		return busFare;
+	}
+	
+	public double getMTRFareCollected() {
+		if(MTRFare == -1) {
+			throw new RuntimeException("The MTR fare is not yet processed!");
+		}
+		return MTRFare;
 	}
 
 	@Override
@@ -258,6 +296,9 @@ public class CNLTransitRoute implements AnalyticalModelTransitRoute{
 		double routeTravelTime=0;
 		for(CNLTransitDirectLink dlink:this.directLinks) {
 			routeTravelTime+=dlink.getLinkTravelTime(network,timeBean,params,anaParams);
+			if(routeTravelTime > 3e5) {
+				return 2e5;
+			}
 		}
 		return routeTravelTime;
 	}

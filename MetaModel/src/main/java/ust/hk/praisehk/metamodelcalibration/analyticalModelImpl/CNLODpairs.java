@@ -9,7 +9,6 @@ import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Plan;
 import org.matsim.api.core.v01.population.Population;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelODpair;
@@ -18,6 +17,7 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelRoute
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelTransitRoute;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TripChain;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 
 

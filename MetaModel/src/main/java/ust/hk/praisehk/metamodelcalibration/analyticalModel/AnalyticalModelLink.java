@@ -8,10 +8,11 @@ import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Node;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModel;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 /**
  *
@@ -122,9 +123,9 @@ public abstract class AnalyticalModelLink implements Link{
 	}
 	
 	public void clearNANFlow() {
-		if(this.linkCarVolume==Double.NaN) {
+		if(Double.isNaN(this.linkCarVolume)) {
 			this.linkCarVolume=0;
-		}else if(this.linkTransitPassenger==Double.NaN) {
+		}else if(Double.isNaN(this.linkTransitPassenger)) {
 			this.linkTransitPassenger=0;
 		}
 	}

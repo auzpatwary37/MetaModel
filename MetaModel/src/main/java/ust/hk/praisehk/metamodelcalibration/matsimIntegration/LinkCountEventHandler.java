@@ -16,13 +16,13 @@ import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler;
 import org.matsim.api.core.v01.events.handler.TransitDriverStartsEventHandler;
 import org.matsim.api.core.v01.events.handler.VehicleEntersTrafficEventHandler;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.vehicles.Vehicle;
 
 import com.google.inject.Inject;
 
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
 
@@ -53,7 +53,7 @@ public class LinkCountEventHandler implements LinkEnterEventHandler, TransitDriv
 		
 	}
 	
-	public Map<String,Map<Id<Link>,Double>> geenerateLinkCounts(){
+	public Map<String,Map<Id<Link>,Double>> generateLinkCounts(){
 		for(String timeBeanId:this.timeBean.keySet()) {
 			for(Id<Link> LinkId:linkCounts.get(timeBeanId).keySet()) {
 				double totalVehicle=0;

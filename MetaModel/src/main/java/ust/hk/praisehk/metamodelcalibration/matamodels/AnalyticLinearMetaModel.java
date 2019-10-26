@@ -41,16 +41,8 @@ public class AnalyticLinearMetaModel extends MetaModelImpl {
 			Map<Integer, LinkedHashMap<String, Double>> paramsToCalibrate,String timeBeanId, int currentParamNo) {
 		
 		super(measurementId,SimData,paramsToCalibrate,timeBeanId,currentParamNo);
-		if(measurementId.equals(MetaModel.profitMeasurement)) {
-			for(Entry<Integer,Measurements> e:AnalyticalData.entrySet()) {
-				this.analyticalData.put(e.getKey(),e.getValue().getBusProfit());
-				
-			}
-		}else {
-			for(Entry<Integer,Measurements> e:AnalyticalData.entrySet()) {
-				this.analyticalData.put(e.getKey(),e.getValue().getVolumes(this.measurementId).get(timeBeanId));
-				
-			}
+		for(Entry<Integer,Measurements> e:AnalyticalData.entrySet()) {
+			this.analyticalData.put(e.getKey(),e.getValue().getValues(this.measurementId).get(timeBeanId));
 		}
 		this.noOfMetaModelParams=this.noOfParams+2;
 		this.calibrateMetaModel(currentParamNo);
@@ -68,9 +60,11 @@ public class AnalyticLinearMetaModel extends MetaModelImpl {
 			@Override
 			public double compute(int m, int n, double[] x, double[] constrains) {
 				double objective=0;
+				System.out.println();//remove
 				MetaModelParams=x;
 				for(int i:params.keySet()) {
 					objective+=Math.pow(calcMetaModel(analyticalData.get(i), params.get(i))-simData.get(i),2)*calcEuclDistanceBasedWeight(params, i,currentParamNo);
+					System.out.println();//remove
 				}
 				if(addRidgePenalty==true) {
 					for(double d:x) {

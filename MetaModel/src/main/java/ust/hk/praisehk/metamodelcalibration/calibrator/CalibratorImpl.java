@@ -12,12 +12,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.AnalyticLinearMetaModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.AnalyticalQuadraticMetaModel;
@@ -69,7 +68,7 @@ public class CalibratorImpl implements Calibrator {
 	private double thresholdErrorRatio=.01;
 	private String metaModelType=MetaModel.AnalyticalLinearMetaModelName;
 	private double trusRegionIncreamentRatio=1.25;
-	private double trustRegionDecreamentRatio=0.9;
+	private double trustRegionDecreamentRatio=0.5;
 	private ParamReader pReader;
 	private final String fileLoc;
 	private final boolean shouldPerformInternalParamCalibration;
@@ -130,13 +129,13 @@ public class CalibratorImpl implements Calibrator {
 	private void createMetaModel(Map<Id<Measurement>,Map<String,LinkedHashMap<String,Double>>>simGradient, 
 			Map<Id<Measurement>,Map<String,LinkedHashMap<String,Double>>> anaGradient, String metaModelType) {
 		try {
-		if((this.metaModelType.equals(MetaModel.GradientBased_I_MetaModelName)||
-				this.metaModelType.equals(MetaModel.GradientBased_II_MetaModelName)||
-				this.metaModelType.equals(MetaModel.GradientBased_III_MetaModelName))&& (anaGradient==null||simGradient==null)) {
-			logger.error("Cannot create gradient based meta-model without gradient. switching to AnalyticalLinear");
-			throw new IllegalArgumentException("Gradient cannot be null");
-
-		}
+			if((this.metaModelType.equals(MetaModel.GradientBased_I_MetaModelName)||
+					this.metaModelType.equals(MetaModel.GradientBased_II_MetaModelName)||
+					this.metaModelType.equals(MetaModel.GradientBased_III_MetaModelName))&& (anaGradient==null||simGradient==null)) {
+				logger.error("Cannot create gradient based meta-model without gradient. switching to AnalyticalLinear");
+				throw new IllegalArgumentException("Gradient cannot be null");
+	
+			}
 		}catch(Exception e) {
 			metaModelType=MetaModel.AnalyticalLinearMetaModelName;
 		}
@@ -202,16 +201,16 @@ public class CalibratorImpl implements Calibrator {
 		}
 		
 		//Add the fare metamodel
-		MetaModel metaModel;
-		
-		if(metaModelType.equals(MetaModel.AnalyticalLinearMetaModelName)){
-			metaModel=new AnalyticLinearMetaModel(MetaModel.profitMeasurement, this.simMeasurements, this.anaMeasurements, this.params, null, this.currentParamNo) ;
-			Map<String, MetaModel> metaModelMap = new HashMap<String,MetaModel>();
-			metaModelMap.put("0", metaModel);
-			this.metaModels.put(MetaModel.profitMeasurement, metaModelMap);
-		}else {
-			throw new IllegalArgumentException("The metamodel of this type is not supported!");
-		}
+//		MetaModel metaModel;
+//		
+//		if(metaModelType.equals(MetaModel.AnalyticalLinearMetaModelName)){
+//			metaModel=new AnalyticLinearMetaModel(MetaModel.profitMeasurement, this.simMeasurements, this.anaMeasurements, this.params, null, this.currentParamNo) ;
+//			Map<String, MetaModel> metaModelMap = new HashMap<String,MetaModel>();
+//			metaModelMap.put("0", metaModel);
+//			this.metaModels.put(MetaModel.profitMeasurement, metaModelMap);
+//		}else {
+//			throw new IllegalArgumentException("The metamodel of this type is not supported!");
+//		}
 					
 		
 	}
@@ -225,7 +224,7 @@ public class CalibratorImpl implements Calibrator {
 		if(!metaModelType.equals(MetaModel.LinearMetaModelName)&&!metaModelType.equals(MetaModel.QudaraticMetaModelName)) {
 			MeasurementDataContainer mdc = new MeasurementDataContainer();			
 			sue.perFormSUE(this.pReader.ScaleUp(this.trialParam), mdc);
-			anaMeasurements.updateMeasurements(mdc);
+			anaMeasurements = mdc.getMeasurements(this.calibrationMeasurements.getTimeBean());
 		}
 		new MeasurementsWriter(anaMeasurements).write(this.fileLoc+"anaMeasurement"+this.iterationNo+".xml");
 		new MeasurementsWriter(simMeasurements).write(this.fileLoc+"simMeasurement"+this.iterationNo+".xml");
@@ -319,7 +318,6 @@ public class CalibratorImpl implements Calibrator {
 		//Generating metaModels
 		
 		this.createMetaModel(this.currentSimGradient, this.currentAnaGradient, metaModelType);
-		
 		//Calculating new Point
 		if(this.iterationNo>0) {
 			if(this.calcAverageMetaParamsChange()<this.minMetaParamChange && !metaModelType.equals(MetaModel.GradientBased_I_MetaModelName)) {
@@ -330,15 +328,12 @@ public class CalibratorImpl implements Calibrator {
 						metaModelType,this.pReader, this.iterationNo,this.fileLoc);
 				this.trialParam=anaOptimizer.performOptimization();
 			}
-			
 		}else {
 			AnalyticalModelOptimizer anaOptimizer=new AnalyticalModelOptimizerImpl(sue, this.calibrationMeasurements, 
 					this.metaModels, this.currentParam, this.TrRadius, this.pReader.getInitialParamLimit(),this.ObjectiveType, 
 					metaModelType,this.pReader,this.iterationNo, this.fileLoc);
 			this.trialParam=anaOptimizer.performOptimization();
 		}
-		
-		
 		this.iterationNo++;
 		WriteParam(this.fileLoc+"param"+this.iterationNo+".csv",this.trialParam);
 		return this.trialParam;
@@ -363,14 +358,11 @@ public class CalibratorImpl implements Calibrator {
 			fw.append("MeasurementId,timeBeanId,RealCount,currentSimCount,trialSimCount\n");
 			for(Measurement m: this.calibrationMeasurements.getMeasurements().values()) {
 				for(String timeBean:m.getValidTimeBeans()) {
-					fw.append(m.getId()+","+timeBean+","+this.calibrationMeasurements.getVolumes(m.getId()).get(timeBean)+","+
-							this.simMeasurements.get(this.currentParamNo).getVolumes(m.getId()).get(timeBean)+","+
-							this.simMeasurements.get(this.iterationNo).getVolumes(m.getId()).get(timeBean)+"\n");
+					fw.append(m.getId()+","+timeBean+","+this.calibrationMeasurements.getValues(m.getId()).get(timeBean)+","+
+							this.simMeasurements.get(this.currentParamNo).getValues(m.getId()).get(timeBean)+","+
+							this.simMeasurements.get(this.iterationNo).getValues(m.getId()).get(timeBean)+"\n");
 				}
 			}
-			
-			fw.append("fare,0,"+this.calibrationMeasurements.getBusProfit()+","+this.simMeasurements.get(this.currentParamNo).getBusProfit()+","+
-						this.simMeasurements.get(this.iterationNo).getBusProfit()+"\n");
 		fw.flush();
 		fw.close();
 		} catch (IOException e) {
@@ -384,14 +376,10 @@ public class CalibratorImpl implements Calibrator {
 		Measurements metaModelMeasurements=this.calibrationMeasurements.clone();
 		for(Measurement m: this.calibrationMeasurements.getMeasurements().values()) {
 			for(String timeBeanId:m.getValidTimeBeans()) {
-				metaModelMeasurements.addVolume(m.getId(), timeBeanId, this.metaModels.get(m.getId()).get(timeBeanId).
-						calcMetaModel(this.anaMeasurements.get(iterNo).getVolumes(m.getId()).get(timeBeanId), this.params.get(iterNo)));
+				metaModelMeasurements.setValue(m.getId(), timeBeanId, this.metaModels.get(m.getId()).get(timeBeanId).
+						calcMetaModel(this.anaMeasurements.get(iterNo).getValues(m.getId()).get(timeBeanId), this.params.get(iterNo)));
 			}
 		}
-		
-		metaModelMeasurements.setBusProfit(this.metaModels.get(MetaModel.profitMeasurement).get("0"). //Just the time bin is put as 0.
-				calcMetaModel(this.anaMeasurements.get(iterNo).getBusProfit(), this.params.get(iterNo)));
-		
 		return metaModelMeasurements;
 	}
 	

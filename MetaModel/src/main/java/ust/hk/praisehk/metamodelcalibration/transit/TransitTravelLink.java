@@ -7,7 +7,6 @@ import java.util.List;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.Departure;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
@@ -19,6 +18,8 @@ import com.google.common.collect.Lists;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.transit.TransitNetworkHR.TransitRouterNetworkNode;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 /**
  * This is the class for travel link (i.e. between two stops of a route)

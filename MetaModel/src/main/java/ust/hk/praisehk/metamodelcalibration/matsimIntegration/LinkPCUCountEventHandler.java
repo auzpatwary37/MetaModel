@@ -16,11 +16,12 @@ import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler;
 import org.matsim.api.core.v01.events.handler.TransitDriverStartsEventHandler;
 import org.matsim.api.core.v01.events.handler.VehicleEntersTrafficEventHandler;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 
 import org.matsim.vehicles.Vehicle;
 
 import com.google.inject.Inject;
+
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 
 

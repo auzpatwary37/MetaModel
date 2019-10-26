@@ -10,10 +10,11 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.router.util.LeastCostPathCalculator.Path;
-import org.matsim.core.utils.collections.Tuple;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwork;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelRoute;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 public class CNLRoute implements AnalyticalModelRoute{
 
@@ -54,8 +55,8 @@ public class CNLRoute implements AnalyticalModelRoute{
 			}else {
 				travelTime += ((CNLLink)thisLink).getLinkTravelTime(timeBean,params,anaParmas);
 			}
-			if(travelTime > 2e6) {
-				return 2e6;
+			if(travelTime > 2e5) {
+				return 2e5;
 			}
 		}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       		return travelTime;
 	}

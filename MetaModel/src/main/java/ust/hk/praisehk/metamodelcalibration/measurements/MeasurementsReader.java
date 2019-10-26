@@ -11,10 +11,11 @@ import javax.xml.parsers.SAXParserFactory;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
+
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public class MeasurementsReader extends DefaultHandler {
 	
@@ -56,7 +57,7 @@ public class MeasurementsReader extends DefaultHandler {
 		}
 		
 		if(qName.equalsIgnoreCase("Volume")) {
-			((LinkMeasurement) this.m.getMeasurements().get(this.mId)).addVolume(attributes.getValue("TimeBeanId"), Double.parseDouble(attributes.getValue("PCUVolume")));
+			this.m.getMeasurements().get(this.mId).setValue(attributes.getValue("TimeBeanId"), Double.parseDouble(attributes.getValue("PCUVolume")));
 		}
 		
 	}

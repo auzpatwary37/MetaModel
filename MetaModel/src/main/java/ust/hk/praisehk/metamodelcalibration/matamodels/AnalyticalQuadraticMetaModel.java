@@ -38,7 +38,7 @@ public class AnalyticalQuadraticMetaModel extends MetaModelImpl{
 		
 		super(measurementId,SimData,paramsToCalibrate,timeBeanId,currentParamNo);
 		for(Entry<Integer,Measurements> e:AnalyticalData.entrySet()) {
-			this.analyticalData.put(e.getKey(),e.getValue().getVolumes(this.measurementId).get(timeBeanId));
+			this.analyticalData.put(e.getKey(),e.getValue().getValues(this.measurementId).get(timeBeanId));
 			
 		}
 		this.noOfMetaModelParams=2+this.noOfParams+this.noOfParams*(this.noOfParams+1)/2;

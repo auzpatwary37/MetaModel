@@ -8,8 +8,8 @@ import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
@@ -42,11 +42,11 @@ public class SimpleOptimizationFunction extends OptimizationFunction{
 		Map<String,Map<Id<Link>,Double>> linkVolume=null;
 		this.getSUE().clearLinkCarandTransitVolume();
 		
-		MeasurementDataContainer mdc = new MeasurementDataContainer();
+		MeasurementDataContainer mdc = new MeasurementDataContainer(); //TODO: Investigate into it and get the anaModelMeasurement directly
 		if(!this.metaModelType.equals(MetaModel.LinearMetaModelName) && !this.metaModelType.equals(MetaModel.QudaraticMetaModelName)) {
 			linkVolume=this.getSUE().perFormSUE(this.pReader.ScaleUp(new LinkedHashMap<>(params)), mdc);
 		}
-		double objective=calcMetaModelObjective(linkVolume, params);
+		double objective=calcMetaModelObjective(mdc, params);
 		int d=0;
 		for(double xi:calcConstrain(x,this.getParamLimit())) {
 			constrains[d]=xi;
@@ -86,13 +86,9 @@ public class SimpleOptimizationFunction extends OptimizationFunction{
 	
 	
 	@Override
-	public double calcMetaModelObjective(Map<String, Map<Id<Link>, Double>> linkVolume,
-			LinkedHashMap<String, Double> params) {
-		
-		Measurements anaMeasurements=this.getRealData().clone();
-		if(linkVolume!=null) {
-			anaMeasurements.updateMeasurements(linkVolume);
-		}
+	public double calcMetaModelObjective(MeasurementDataContainer mdc, LinkedHashMap<String, Double> params) {
+		Measurements anaMeasurements= mdc.getMeasurements(this.getRealData().getTimeBean());
+		anaMeasurements.writeCSVMeasurements("ana2.csv");
 		return this.calcMetaModelObjective(anaMeasurements, params);
 	}
 
@@ -137,16 +133,11 @@ public class SimpleOptimizationFunction extends OptimizationFunction{
 		Measurements metaMeasurements=this.getRealData().clone();
 		for(Measurement m:this.getRealData().getMeasurements().values()) {
 			for(String timeBean:m.getValidTimeBeans()) {
-				double AnaLyticalModelLinkCount=anaMeasurements.getVolumes(m.getId()).get(timeBean);
+				double AnaLyticalModelLinkCount=anaMeasurements.getValues(m.getId()).get(timeBean);
 				MetaModel metaModel=this.metaModels.get(m.getId()).get(timeBean);
-				metaMeasurements.addVolume(m.getId(), timeBean, metaModel.calcMetaModel(AnaLyticalModelLinkCount, params));
+				metaMeasurements.setValue(m.getId(), timeBean, metaModel.calcMetaModel(AnaLyticalModelLinkCount, params));
 			}
 		}
-		
-		//For the profit
-		MetaModel metaModel=this.metaModels.get(MetaModel.profitMeasurement).get("0");
-		metaMeasurements.setBusProfit(metaModel.calcMetaModel(anaMeasurements.getBusProfit(), params));
-		
 		objective=ObjectiveCalculator.calcObjective(this.getRealData(), metaMeasurements,type);
 		return objective;
 	}

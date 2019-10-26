@@ -6,10 +6,9 @@ import java.util.Map.Entry;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
-
 
 import de.xypron.jcobyla.Calcfc;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
 import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementDataContainer;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
@@ -44,7 +43,7 @@ public class InternalParamCalibratorFunction implements Calcfc{
 				this.Parmas=params;
 				this.timeBean=simData.get(0).getTimeBean();
 				if(initialParam2.size()==sue.getAnalyticalModelInternalParams().size()) {
-					paramLimit=sue.getAnalyticalModelParamsLimit();
+					paramLimit = sue.getAnalyticalModelParamsLimit();
 				}else {
 					for(Entry<String,Tuple<Double,Double>>e:sue.getAnalyticalModelParamsLimit().entrySet()) {
 						if(initialParam2.containsKey(e.getKey())) {
@@ -75,13 +74,12 @@ public class InternalParamCalibratorFunction implements Calcfc{
 					MeasurementDataContainer mdc = new MeasurementDataContainer();
 					//sue.clearLinkCarandTransitVolume();
 					Map<String,Map<Id<Link>,Double>> anaCount=this.sue.perFormSUE(param, anaParam, mdc);
-					Measurements anaMeasurement=this.simMeasurements.get(0).clone();
-					anaMeasurement.updateMeasurements(mdc);
+					Measurements anaMeasurement = mdc.getMeasurements(this.simMeasurements.get(0).getTimeBean());
 					Measurements simMeasurement=this.simMeasurements.get(i);
 					for(Id<Measurement> mId:simMeasurement.getMeasurements().keySet()) {
-						for(String s:simMeasurement.getVolumes(mId).keySet()) {
-							double simValue=simMeasurement.getVolumes(mId).get(s);
-							double anaValue=anaMeasurement.getVolumes(mId).get(s);
+						for(String s:simMeasurement.getValues(mId).keySet()) {
+							double simValue=simMeasurement.getValues(mId).get(s);
+							double anaValue=anaMeasurement.getValues(mId).get(s);
 							double a=simValue-anaValue;
 							double weight=1/(1+this.calcEucleadeanDistance(this.currentParam, param));
 							objective+=weight*Math.pow(a, 2);
@@ -167,11 +165,11 @@ public class InternalParamCalibratorFunction implements Calcfc{
 			public Map<Integer,Measurements> getUpdatedAnaCount() {
 				Map<Integer,Measurements> anaMeasurements=new HashMap<>();
 				for(int i=0;i<this.simMeasurements.size();i++) {
-					anaMeasurements.put(i,this.simMeasurements.get(i).clone());
+					
 					MeasurementDataContainer mdc = new MeasurementDataContainer();
 					//Map<String,Map<Id<Link>,Double>> linkFlows = 
 					this.sue.perFormSUE(new HashMap<>(this.Parmas.get(i)), mdc);
-					anaMeasurements.get(i).updateMeasurements(mdc);
+					anaMeasurements.put(i, mdc.getMeasurements(this.simMeasurements.get(i).getTimeBean()));
 				}
 				return anaMeasurements;
 			}

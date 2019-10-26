@@ -70,6 +70,9 @@ public class SignalFlowReductionGenerator {
 						cycleTime = sp.getCycleTime();
 						SignalGroupSettingsData signalGroupSetting = sp.getSignalGroupSettingsDataByGroupId().get(signalGroupDataId);
 						double time = signalGroupSetting.getDropping() - signalGroupSetting.getOnset();
+						if(time <= 0) {
+							time += cycleTime;
+						}
 						seconds_green += time;
 						break;
 					}

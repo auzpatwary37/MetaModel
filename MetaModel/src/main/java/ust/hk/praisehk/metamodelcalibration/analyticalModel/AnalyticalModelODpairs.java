@@ -22,7 +22,6 @@ import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.network.io.MatsimNetworkReader;
 import org.matsim.core.population.io.PopulationReader;
 import org.matsim.core.scenario.ScenarioUtils;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.facilities.ActivityFacility;
 import org.matsim.utils.objectattributes.ObjectAttributes;
 import org.matsim.vehicles.Vehicle;
@@ -31,6 +30,7 @@ import org.matsim.vehicles.Vehicles;
 import com.google.common.collect.Lists;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.TimeSpecificODPair;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 
 

@@ -6,11 +6,12 @@ import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.population.Leg;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 
 import dynamicTransitRouter.fareCalculators.FareCalculator;
 import dynamicTransitRouter.transfer.TransferDiscountCalculator;
+
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 
 /**

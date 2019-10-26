@@ -2,6 +2,7 @@ package ust.hk.praisehk.metamodelcalibration.matsimIntegration;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
@@ -17,6 +18,7 @@ import org.matsim.core.controler.listener.BeforeMobsimListener;
 import org.matsim.core.controler.listener.IterationEndsListener;
 import org.matsim.core.controler.listener.ShutdownListener;
 import org.matsim.core.controler.listener.StartupListener;
+import org.matsim.core.utils.collections.Tuple;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -35,7 +37,7 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 	private @Named("CalibrationCounts") Measurements calibrationMeasurements;
 	private String fileLoc;
 	@Inject
-	private LinkCountEventHandler pcuVolumeCounter;
+	//private LinkCountEventHandler pcuVolumeCounter;
 	private MeasurementsStorage storage;
 	@Inject
 	private @Named("CurrentParam") paramContainer currentParam;
@@ -45,16 +47,18 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 	
 	private int maxIter;
 	private final Map<String, FareCalculator> farecalc;
-	private double busFareCollected;
+	private Map<String, Double> timeBasedbusFareCollected = new HashMap<>();
+	private Map<String, Double> timeBasedMTRFareCollected = new HashMap<>();
 	private int AverageCountOverNoOfIteration=5;
 	private boolean shouldAverageOverIteration=true;
-	private Map<String, Map<Id<Link>, Double>> counts=null;
+	//private Map<String, Map<Id<Link>, Double>> counts=null;
 	
 	@Inject	private EventsManager eventsManager;
 	
 	@Inject
-	public AnaModelControlerListener(Scenario scenario,AnalyticalModel sueAssignment, 
-			Map<String,FareCalculator> farecalc,@Named("fileLoc") String fileLoc,@Named("generateRoutesAndOD") boolean generateRoutesAndOD, MeasurementsStorage storage){
+	public AnaModelControlerListener(Scenario scenario, AnalyticalModel sueAssignment, 
+			Map<String,FareCalculator> farecalc, @Named("fileLoc") String fileLoc, 
+			@Named("generateRoutesAndOD") boolean generateRoutesAndOD, MeasurementsStorage storage){
 		this.SueAssignment=sueAssignment;
 		this.farecalc=farecalc;
 		this.scenario=scenario;
@@ -65,43 +69,53 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 	
 	@Override
 	public void notifyStartup(StartupEvent event) {
-		this.eventsManager.addHandler(pcuVolumeCounter);
-		this.maxIter=event.getServices().getConfig().controler().getLastIteration();
+		//this.eventsManager.addHandler(pcuVolumeCounter);
+		this.maxIter = event.getServices().getConfig().controler().getLastIteration();
+		Map<String, Tuple<Double, Double>> timeBinsForMATSim = new HashMap<>();
+		for(Entry<String, ust.hk.praisehk.metamodelcalibration.Utils.Tuple<Double, Double>> timeBin: 
+			storage.getCalibrationMeasurements().getTimeBean().entrySet()) {
+			timeBinsForMATSim.put(timeBin.getKey(), new Tuple<Double, Double>(timeBin.getValue().getFirst(), timeBin.getValue().getSecond()));
 		}
+		this.transitFares.enableTimeBinMeasurement(timeBinsForMATSim);
+	}
 	
 	@Override
 	public void notifyBeforeMobsim(BeforeMobsimEvent event) {
-		this.pcuVolumeCounter.resetLinkCount();
+		//this.pcuVolumeCounter.resetLinkCount();
 	}
+	
 	
 
 	public void notifyAfterMobsim(AfterMobsimEvent event) {
 		if(this.shouldAverageOverIteration) {
 			int counter=event.getIteration();
-			if(counter>this.maxIter-5) { //If it is final iterations
-				if(this.counts==null) {
-					counts=new HashMap<>(this.pcuVolumeCounter.geenerateLinkCounts()); //Store a value
-				}else {
-					Map<String,Map<Id<Link>,Double>> newcounts=this.pcuVolumeCounter.geenerateLinkCounts();
-					for(String s:this.counts.keySet()) {
-						for(Id<Link> lId:this.counts.get(s).keySet()) {
-							counts.get(s).put(lId, counts.get(s).get(lId)+newcounts.get(s).get(lId)); //or add it
-						}
-					}
-					busFareCollected += transitFares.getBusFareCollected().doubleValue();
-				}
+			if(counter>this.maxIter - this.AverageCountOverNoOfIteration) { //If it is final iterations
+//				if(this.counts==null) {
+//					counts=new HashMap<>(this.pcuVolumeCounter.generateLinkCounts()); //Store a value
+//				}else {
+//					Map<String,Map<Id<Link>,Double>> newcounts=this.pcuVolumeCounter.generateLinkCounts();
+//					for(String s:this.counts.keySet()) {
+//						for(Id<Link> lId:this.counts.get(s).keySet()) {
+//							counts.get(s).put(lId, counts.get(s).get(lId)+newcounts.get(s).get(lId)); //or add it
+//						}
+//					}
+//				}
+				transitFares.getTimeBasedbusFareCollected().forEach((k,v) -> timeBasedbusFareCollected.merge(k, v, Double::sum));
+				transitFares.getTimeBasedmtrFareCollected().forEach((k,v) -> timeBasedMTRFareCollected.merge(k, v, Double::sum));
 			}
 			if(counter==this.maxIter) {
 				//finally divide it by the number of iterations
-				for(String s:this.counts.keySet()) {
-					for(Id<Link> lId:this.counts.get(s).keySet()) {
-						counts.get(s).put(lId, counts.get(s).get(lId)/this.AverageCountOverNoOfIteration);
-					}
-				}
-				busFareCollected /= this.AverageCountOverNoOfIteration;
-				Measurements m=storage.getCalibrationMeasurements().clone();
-				m.updateMeasurements(counts); //Store the counts to the measurement object.
-				m.setBusProfit(busFareCollected);
+//				for(String s:this.counts.keySet()) {
+//					for(Id<Link> lId:this.counts.get(s).keySet()) {
+//						counts.get(s).put(lId, counts.get(s).get(lId)/this.AverageCountOverNoOfIteration);
+//					}
+//				}
+				timeBasedbusFareCollected.replaceAll((k,v) -> v/this.AverageCountOverNoOfIteration);
+				timeBasedMTRFareCollected.replaceAll((k,v) -> v/this.AverageCountOverNoOfIteration);
+				//busFareCollected /= this.AverageCountOverNoOfIteration;
+				Measurements m = storage.getCalibrationMeasurements().clone();
+				//m.updateLinkVolumes(counts); //Store the counts to the measurement object.
+				m.setBusAndMetroProfit(timeBasedbusFareCollected, timeBasedMTRFareCollected);
 				//new MeasurementsWriter(m).write();
 				this.storage.storeMeasurements(this.currentParam.getParam(), m);
 			}
@@ -109,8 +123,8 @@ public class AnaModelControlerListener implements StartupListener,BeforeMobsimLi
 			int counter=event.getIteration();
 			if(counter==this.maxIter) {
 				Measurements m=storage.getCalibrationMeasurements().clone();
-				m.updateMeasurements(this.pcuVolumeCounter.geenerateLinkCounts());
-				m.setBusProfit(transitFares.getBusFareCollected().doubleValue());
+				//m.updateLinkVolumes(this.pcuVolumeCounter.generateLinkCounts());
+				m.setBusAndMetroProfit(transitFares.getTimeBasedbusFareCollected(), transitFares.getTimeBasedmtrFareCollected());
 				//m.writeCSVMeasurements(fileLoc);
 				this.storage.storeMeasurements(this.currentParam.getParam(), m);
 			}

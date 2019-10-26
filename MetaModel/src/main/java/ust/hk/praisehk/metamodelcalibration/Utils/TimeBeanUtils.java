@@ -1,11 +1,11 @@
 package ust.hk.praisehk.metamodelcalibration.Utils;
 
 import java.util.Map;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public final class TimeBeanUtils {
 	
-	public static String findTimeBean(Map<String, 
-			org.matsim.core.utils.collections.Tuple<Double, Double>> timeBeans, double time) {
+	public static String findTimeBean(Map<String, Tuple<Double, Double>> timeBeans, double time) {
 		time = (time==0)?1:time;
 		time = (time > 27*3600)? time = 27 * 3600:time;
 		for(String s:timeBeans.keySet()) {

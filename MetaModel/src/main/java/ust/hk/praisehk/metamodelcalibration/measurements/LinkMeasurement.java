@@ -9,7 +9,8 @@ import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
+
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public class LinkMeasurement extends Measurement{
 	
@@ -17,7 +18,6 @@ public class LinkMeasurement extends Measurement{
 	 * Some attributes name are kept as public and final string
 	 */
 	public static final String linkListAttributeName="LINK_LIST";
-	private Map<String,Double> volumes=new HashMap<>();
 	
 	private static final Logger logger=Logger.getLogger(LinkMeasurement.class);
 	private Coord coord=null;
@@ -30,58 +30,22 @@ public class LinkMeasurement extends Measurement{
 		this.coord = coord;
 	}
 
-	protected LinkMeasurement(String id, Map<String,Tuple<Double,Double>> timeBean) {
+	protected LinkMeasurement(String id, Map<String, Tuple<Double, Double>> timeBean) {
 		super(id, timeBean);
 		this.attributes.put(linkListAttributeName, new ArrayList<Id<Link>>());
 	}
-	
-	/**
-	 * It PUTS a volume inside the LinkMeasurement
-	 * @param timeBeanId
-	 * @param volume
-	 */
-	public void addVolume(String timeBeanId,double volume) {
-		if(!this.timeBean.containsKey(timeBeanId)){
-			logger.error("timeBean do not contain timeBeanId"+timeBeanId+", please check.");
-			logger.warn("Ignoring volume for timeBeanId"+timeBeanId);
-		}else {
-			this.volumes.put(timeBeanId, volume);
-		}
-	}
-	
-	/**
-	 * Call to this method with this.linkListAttributeName String will 
-	 * return a ArrayList<Id<Link>> containing the link Ids of all the links in this measurement
-	 * @param attributeName
-	 * @return
-	 */
-	public Object getAttribute(String attributeName) {
-		return this.attributes.get(attributeName);
-	}
 
-	public void setAttribute(String attributeName, Object attribute) {
-		this.attributes.put(attributeName, attribute);
-	}
-	
-	public Map<String,Double> getVolumes(){
-		return this.volumes;
-	}
 	
 	public LinkMeasurement clone() {
 		LinkMeasurement m=new LinkMeasurement(this.id.toString(),new HashMap<>(timeBean));
-		for(String s:this.volumes.keySet()) {
-			m.addVolume(s, this.getVolumes().get(s));
+		for(String s:this.values.keySet()) {
+			m.setValue(s, this.getValues().get(s));
 		}
 		for(String s:this.attributes.keySet()) {
 			m.setAttribute(s, this.attributes.get(s));
 		}
+		m.coord = this.coord;
 		return m;
-	}
-	
-	
-	
-	public Map<String, Object> getAttributes() {
-		return attributes;
 	}
 
 	/**
@@ -96,15 +60,15 @@ public class LinkMeasurement extends Measurement{
 			logger.warn("MeasurementId: "+this.getId().toString()+" LinkList is empty!!! creating linkId from measurement ID");
 			((ArrayList<Id<Link>>)this.attributes.get(linkListAttributeName)).add(Id.createLinkId(this.getId().toString()));
 		}
-		if(this.volumes.size()==0) {
+		if(this.values.size()==0) {
 			logger.warn("MeasurementId: "+this.getId().toString()+" Volume is empty!!! Updating volume for all time beans");
 			for(String s: this.timeBean.keySet()) {
 				if(linkVolumes.containsKey(s)) {
-					this.volumes.put(s, 0.);
+					this.values.put(s, 0.);
 				}
 			}
 		}
-		for(String s:volumes.keySet()) {
+		for(String s:values.keySet()) {
 			double volume=0;
 			for(Id<Link>linkId:((ArrayList<Id<Link>>)this.attributes.get(linkListAttributeName))) {
 				try {
@@ -126,12 +90,12 @@ public class LinkMeasurement extends Measurement{
 				}
 				
 			}
-			this.volumes.put(s, volume);
+			this.values.put(s, volume);
 		}
 	}
 
 	@Override
 	public Set<String> getValidTimeBeans() {
-		return this.volumes.keySet();
+		return this.values.keySet();
 	}
 }

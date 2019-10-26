@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 
 import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
+import ust.hk.praisehk.metamodelcalibration.measurements.FareMeasurement;
 import ust.hk.praisehk.metamodelcalibration.measurements.LinkMeasurement;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
@@ -38,10 +39,8 @@ public class ObjectiveCalculator {
 		double stationCountAnaOrSim=0;
 		for(Measurement m:simOrAnaMeasurements.getMeasurements().values()) {
 			if(m instanceof LinkMeasurement) {
-				LinkMeasurement lm = (LinkMeasurement) m;
-				for(String timeBeanId:lm.getVolumes().keySet()) {
-					stationCountAnaOrSim+= ((LinkMeasurement) simOrAnaMeasurements.getMeasurements().get(lm.getId())).
-							getVolumes().get(timeBeanId);
+				for(String timeBeanId:m.getValues().keySet()) {
+					stationCountAnaOrSim+= m.getValues().get(timeBeanId);
 				}
 				objective+=stationCountAnaOrSim;
 			}
@@ -55,7 +54,16 @@ public class ObjectiveCalculator {
 	 * @return
 	 */
 	public static double calcFareObjective(Measurements simOrAnaMeasurements) {
-		return -simOrAnaMeasurements.getBusProfit();
+		double busFareCollected = 0.;
+		for(Measurement m: simOrAnaMeasurements.getMeasurements().values()) {
+			if(m instanceof FareMeasurement) {
+				if( ((FareMeasurement) m).getAttribute("mode").equals("bus") ) {
+					for(double fareCollected : m.getValues().values())
+						busFareCollected += fareCollected;
+				}
+			}
+		}
+		return -busFareCollected;
 	}
 	
 	public static double aadtDifferenceObjective(Measurements realMeasurements,Measurements simOrAnaMeasurements) {
@@ -65,18 +73,18 @@ public class ObjectiveCalculator {
 		for(Measurement m:realMeasurements.getMeasurements().values()) {
 			if(m instanceof LinkMeasurement) {
 				LinkMeasurement lm = (LinkMeasurement) m;
-				for(String timeBeanId:lm.getVolumes().keySet()) {
+				for(String timeBeanId:lm.getValues().keySet()) {
 					LinkMeasurement simLm = (LinkMeasurement) simOrAnaMeasurements.getMeasurements().get(m.getId());
 					if(simLm==null) {
 						logger.error("The Measurements entered are not comparable (measurement do not match)!!! This should not happen. Please check");
 						
-					}else if(simLm.getVolumes().get(timeBeanId)==null) {
+					}else if(simLm.getValues().get(timeBeanId)==null) {
 						logger.error("The Measurements entered are not comparable (volume timeBeans do not match)!!! This should not happen. Please check");
 						
 					}
 					
-					stationCountReal+=lm.getVolumes().get(timeBeanId);
-					stationCountAnaOrSim+=simLm.getVolumes().get(timeBeanId);
+					stationCountReal+=lm.getValues().get(timeBeanId);
+					stationCountAnaOrSim+=simLm.getValues().get(timeBeanId);
 				}
 				objective+=Math.pow((stationCountReal-stationCountAnaOrSim),2);
 			}
@@ -101,17 +109,17 @@ public class ObjectiveCalculator {
 			for(Measurement m:realMeasurements.getMeasurements().values()) {
 				if(m instanceof LinkMeasurement) {
 					LinkMeasurement lm = (LinkMeasurement) m;
-					for(String timeBeanId:lm.getVolumes().keySet()) {
+					for(String timeBeanId:lm.getValues().keySet()) {
 						LinkMeasurement simLm = (LinkMeasurement) simOrAnaMeasurements.getMeasurements().get(m.getId());
 						if(simLm==null) {
 							logger.error("The Measurements entered are not comparable (measuremtn do not match)!!! This should not happen. Please check");
 							
-						}else if(simLm.getVolumes().get(timeBeanId)==null) {
+						}else if(simLm.getValues().get(timeBeanId)==null) {
 							logger.error("The Measurements entered are not comparable (volume timeBeans do not match)!!! This should not happen. Please check");
 							
 						}
 						
-						objective+=Math.pow((lm.getVolumes().get(timeBeanId)-simLm.getVolumes().get(timeBeanId)),2);
+						objective+=Math.pow((lm.getValues().get(timeBeanId)-simLm.getValues().get(timeBeanId)),2);
 					}
 				}
 			}
@@ -135,9 +143,9 @@ public class ObjectiveCalculator {
 		for(Measurement m:realMeasurements.getMeasurements().values()) {
 			if(m instanceof LinkMeasurement) {
 				LinkMeasurement lm = (LinkMeasurement) m;
-				for(String timeBeanid:lm.getVolumes().keySet()) {
+				for(String timeBeanid:lm.getValues().keySet()) {
 					((LinkMeasurement) metaMeasurements.getMeasurements().get(m.getId())).
-					addVolume(timeBeanid, metaModels.get(m.getId()).get(timeBeanid).calcMetaModel( anaMeasurements.getVolumes(m.getId()).get(timeBeanid), param));
+					setValue(timeBeanid, metaModels.get(m.getId()).get(timeBeanid).calcMetaModel( anaMeasurements.getValues(m.getId()).get(timeBeanid), param));
 				}
 			}
 		}

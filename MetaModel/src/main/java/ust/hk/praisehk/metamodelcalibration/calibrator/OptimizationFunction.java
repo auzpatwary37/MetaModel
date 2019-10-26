@@ -5,12 +5,13 @@ import java.util.Map;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 
 import de.xypron.jcobyla.Calcfc;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
 import ust.hk.praisehk.metamodelcalibration.matamodels.MetaModel;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurement;
+import ust.hk.praisehk.metamodelcalibration.measurements.MeasurementDataContainer;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
 
@@ -43,7 +44,7 @@ public abstract class OptimizationFunction implements Calcfc  {
 		this.hessian = hessian;
 	}
 
-	public abstract double calcMetaModelObjective(Map<String,Map<Id<Link>,Double>> linkVolume, LinkedHashMap<String,Double> params);
+	public abstract double calcMetaModelObjective(MeasurementDataContainer mdc, LinkedHashMap<String,Double> params);
 	
 	public abstract double calcMetaModelObjective(Measurements anaMeasurements, LinkedHashMap<String,Double> params);
 	

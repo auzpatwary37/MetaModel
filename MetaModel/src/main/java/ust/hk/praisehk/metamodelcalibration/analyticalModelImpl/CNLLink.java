@@ -4,9 +4,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelLink;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 /**
  * 

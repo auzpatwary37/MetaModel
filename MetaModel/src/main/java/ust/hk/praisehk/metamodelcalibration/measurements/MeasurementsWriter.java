@@ -14,10 +14,11 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.helpers.DefaultHandler;
+
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public class MeasurementsWriter extends DefaultHandler{
 
@@ -46,7 +47,7 @@ public class MeasurementsWriter extends DefaultHandler{
 			rootEle.appendChild(TimeBeans);
 			
 			for(Measurement mm:m.getMeasurements().values()) {
-				if(mm instanceof LinkMeasurement) { //TODO: Implement writing for other measurements
+				if(mm instanceof LinkMeasurement) {
 					LinkMeasurement lm = (LinkMeasurement) mm;
 					Element measurement=document.createElement("Measurement");
 					measurement.setAttribute("MeasurementId", mm.getId().toString());
@@ -57,7 +58,7 @@ public class MeasurementsWriter extends DefaultHandler{
 						measurement.appendChild(Coord);
 					}
 					Element Volumes=document.createElement("Volumes");
-					for(Entry<String,Double>e:lm.getVolumes().entrySet()) {
+					for(Entry<String,Double>e:lm.getValues().entrySet()) {
 						Element volume=document.createElement("Volume");
 						volume.setAttribute("TimeBeanId", e.getKey());
 						volume.setAttribute("PCUVolume", Double.toString(e.getValue()));
@@ -86,11 +87,27 @@ public class MeasurementsWriter extends DefaultHandler{
 					
 					rootEle.appendChild(measurement);
 				}
+				if(mm instanceof FareMeasurement) { 
+					FareMeasurement lm = (FareMeasurement) mm;
+					Element measurement=document.createElement("Measurement");
+					measurement.setAttribute("MeasurementId", mm.getId().toString());
+					Element faresCollected=document.createElement("Fares");
+					
+					for(Entry<String,Double>e : lm.getValues().entrySet()) {
+						Element volume=document.createElement("FareCollected");
+						volume.setAttribute("TimeBeanId", e.getKey());
+						volume.setAttribute("Amount", Double.toString(e.getValue()));
+						faresCollected.appendChild(volume);
+					}
+					measurement.appendChild(faresCollected);
+					
+					for(String s:lm.getAttributes().keySet()) {
+						measurement.setAttribute(s, lm.getAttribute(s).toString());
+					}
+					
+					rootEle.appendChild(measurement);
+				}
 			}
-			
-			Element fares = document.createElement("fare_received"); //Save the fares
-			fares.setAttribute("fare_collected", Double.toString(m.getBusProfit()));
-			rootEle.appendChild(fares);
 			
 			document.appendChild(rootEle);
 			

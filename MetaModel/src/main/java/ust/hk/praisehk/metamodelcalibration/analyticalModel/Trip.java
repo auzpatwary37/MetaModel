@@ -8,12 +8,8 @@ import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.core.network.NetworkUtils;
-import org.matsim.core.utils.collections.Tuple;
 
-
-
-
-
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 
 public class Trip {
 	public static int weirdTrip=0;

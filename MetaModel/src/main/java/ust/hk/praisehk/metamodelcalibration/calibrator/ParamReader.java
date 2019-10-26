@@ -15,9 +15,10 @@ import org.apache.log4j.Logger;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.ConfigWriter;
-import org.matsim.core.utils.collections.Tuple;
 
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 /**
  * This class reads the default parameter values,limit, sub-population and any other code specified for the parameters 
  * 

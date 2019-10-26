@@ -35,7 +35,6 @@ import org.matsim.core.api.experimental.events.handler.AgentWaitingForPtEventHan
 import org.matsim.core.api.experimental.events.handler.VehicleArrivesAtFacilityEventHandler;
 import org.matsim.core.api.experimental.events.handler.VehicleDepartsAtFacilityEventHandler;
 import org.matsim.core.controler.MatsimServices;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.pt.transitSchedule.api.Departure;
 import org.matsim.pt.transitSchedule.api.TransitLine;
@@ -59,6 +58,8 @@ import dynamicTransitRouter.costs.WaitingTime;
 import dynamicTransitRouter.fareCalculators.FareCalculator;
 import dynamicTransitRouter.fareCalculators.MTRFareCalculator;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModel;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 /**
  * This function is implemented for the metamodel, based on the transit assignment of last iteration,

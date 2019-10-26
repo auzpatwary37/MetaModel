@@ -18,7 +18,6 @@ import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.router.util.LeastCostPathCalculator.Path;
-import org.matsim.core.utils.collections.Tuple;
 import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.pt.transitSchedule.api.TransitLine;
 import org.matsim.pt.transitSchedule.api.TransitRoute;
@@ -35,6 +34,8 @@ import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelNetwo
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.AnalyticalModelTransitRoute;
 import ust.hk.praisehk.metamodelcalibration.analyticalModel.TransitLink;
 import ust.hk.praisehk.metamodelcalibration.analyticalModelImpl.CNLSUEModel;
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 
 public class ITransitRoute implements AnalyticalModelTransitRoute {
 	private final static String directWalkName = "direct walking";

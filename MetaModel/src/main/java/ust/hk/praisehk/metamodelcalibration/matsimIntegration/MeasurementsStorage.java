@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
-import org.matsim.core.utils.collections.Tuple;
 
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
 import ust.hk.praisehk.metamodelcalibration.measurements.Measurements;
 
 /**
@@ -47,9 +47,9 @@ public class MeasurementsStorage {
 		this.linkCounts.put(this.genearteParamId(params), simMeasurements);
 	}
 	
-	public void storeMeasurements(LinkedHashMap<String,Double>params,Map<String,Map<Id<Link>,Double>>linkVolumes) {
+	public void storeMeasurements(LinkedHashMap<String,Double>params, Map<String,Map<Id<Link>,Double>>linkVolumes) {
 		Measurements simMeasurements=this.calibrationMeasurements.clone();
-		simMeasurements.updateMeasurements(linkVolumes);
+		simMeasurements.updateLinkVolumes(linkVolumes);
 		this.linkCounts.put(this.genearteParamId(params), simMeasurements);
 	}
 	public Set<Id<Link>> getLinksToCount() {

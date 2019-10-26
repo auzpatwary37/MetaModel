@@ -136,12 +136,10 @@ public class SimAndAnalyticalGradientCalculator {
 			Config config=pReader.SetParamToConfig(this.config, thetaPlus); //With little change
 			simRun.run(sue, config, thetaPlus, true,currentIterCounter+"_thread0",this.storage);
 			simLinkCountPlus=this.storage.getSimMeasurement(thetaPlus); //Key: get back the simulation measurements from the run
-			anaLinkCountPlus=simLinkCountPlus.clone();
 			
 			MeasurementDataContainer mdc = new MeasurementDataContainer();
 			sue.perFormSUE(pReader.ScaleUp(thetaPlus), mdc);
-			
-			anaLinkCountPlus.updateMeasurements(mdc); //Making the analytical measurements
+			anaLinkCountPlus = mdc.getMeasurements(simLinkCountPlus.getTimeBean());
 			
 			//Run for the second time.
 			sue=new CNLSUEModel(this.storage.getTimeBean());
@@ -149,31 +147,30 @@ public class SimAndAnalyticalGradientCalculator {
 			config=pReader.SetParamToConfig(this.config, thetaMinus);
 			simRun.run(sue, config, thetaMinus, true,currentIterCounter+"_thread1",this.storage);
 			simLinkCountMinus=this.storage.getSimMeasurement(thetaMinus);
-			anaLinkCountMinus=simLinkCountMinus.clone();
 			mdc = new MeasurementDataContainer();
 			sue.perFormSUE(pReader.ScaleUp(thetaMinus), mdc);
-			anaLinkCountMinus.updateMeasurements(mdc);
+			anaLinkCountMinus = mdc.getMeasurements(simLinkCountMinus.getTimeBean());
 		}
 		//time
 		for(Measurement m:this.storage.getCalibrationMeasurements().getMeasurements().values()) {
 			this.simGradient.put(m.getId(),new HashMap<String, LinkedHashMap<String, Double>>());
 			this.anaGradient.put(m.getId(), new HashMap<String, LinkedHashMap<String, Double>>());
 			//linkId
-			for(String timeBeanId:simLinkCountPlus.getVolumes(m.getId()).keySet()) {
+			for(String timeBeanId:simLinkCountPlus.getValues(m.getId()).keySet()) {
 				this.simGradient.get(m.getId()).put(timeBeanId, new LinkedHashMap<String,Double>());
 				this.anaGradient.get(m.getId()).put(timeBeanId, new LinkedHashMap<String,Double>());
 				i=0;
 				//params
 				for(String paramName:this.currentParam.keySet()) {
-					double gHatSim=(simLinkCountPlus.getVolumes(m.getId()).get(timeBeanId)-simLinkCountMinus.getVolumes(m.getId()).get(timeBeanId))/(2*c*delta[i]);
-					double gHatAna=(anaLinkCountPlus.getVolumes(m.getId()).get(timeBeanId)-anaLinkCountMinus.getVolumes(m.getId()).get(timeBeanId))/(2*c*delta[i]);
+					double gHatSim=(simLinkCountPlus.getValues(m.getId()).get(timeBeanId)-simLinkCountMinus.getValues(m.getId()).get(timeBeanId))/(2*c*delta[i]);
+					double gHatAna=(anaLinkCountPlus.getValues(m.getId()).get(timeBeanId)-anaLinkCountMinus.getValues(m.getId()).get(timeBeanId))/(2*c*delta[i]);
 					this.simGradient.get(m.getId()).get(timeBeanId).put(paramName, gHatSim);
 					this.anaGradient.get(m.getId()).get(timeBeanId).put(paramName, gHatAna);
 					i++;
 					if(this.originalGrad.get(paramName)==null) {
-						this.originalGrad.put(paramName, gHatSim*(this.storage.getSimMeasurement(this.currentParam).getVolumes(m.getId()).get(timeBeanId)-this.storage.getCalibrationMeasurements().getVolumes(m.getId()).get(timeBeanId)));
+						this.originalGrad.put(paramName, gHatSim*(this.storage.getSimMeasurement(this.currentParam).getValues(m.getId()).get(timeBeanId)-this.storage.getCalibrationMeasurements().getValues(m.getId()).get(timeBeanId)));
 					}else {
-						this.originalGrad.put(paramName, this.originalGrad.get(paramName)+gHatSim*(this.storage.getSimMeasurement(this.currentParam).getVolumes(m.getId()).get(timeBeanId)-this.storage.getCalibrationMeasurements().getVolumes(m.getId()).get(timeBeanId)));
+						this.originalGrad.put(paramName, this.originalGrad.get(paramName)+gHatSim*(this.storage.getSimMeasurement(this.currentParam).getValues(m.getId()).get(timeBeanId)-this.storage.getCalibrationMeasurements().getValues(m.getId()).get(timeBeanId)));
 					}		
 				}
 			}
@@ -222,10 +219,10 @@ public class SimAndAnalyticalGradientCalculator {
 	            	simRun.run(sue, configPPlus, pPlus, true,currentIterCounter+s+"_thread0",storage);
 	    			
 	    			simLinkCountPlus=this.storage.getSimMeasurement(pPlus);
-	    			anaLinkCountPlus=simLinkCountPlus.clone();
+	    			
 	    			MeasurementDataContainer mdc = new MeasurementDataContainer();
 	    			sue.perFormSUE(pReader.ScaleUp(pPlus), mdc);
-	    			anaLinkCountPlus.updateMeasurements(mdc);
+	    			anaLinkCountPlus = mdc.getMeasurements(simLinkCountPlus.getTimeBean());
 	    			sue=new CNLSUEModel(this.storage.getTimeBean());
 	    			sue.setDefaultParameters(pReader.ScaleUp(pReader.getDefaultParam()));
 	    			
@@ -233,10 +230,10 @@ public class SimAndAnalyticalGradientCalculator {
 	    			
 	    			simRun.run(sue, configPMinus, pMinus, true,currentIterCounter+s+"_thread0",storage);
 	    			simLinkCountMinus=storage.getSimMeasurement(pMinus);
-	    			anaLinkCountMinus=simLinkCountMinus.clone();
+	    			
 	    			mdc = new MeasurementDataContainer();
 	    			sue.perFormSUE(pReader.ScaleUp(pMinus), mdc);
-	    			anaLinkCountMinus.updateMeasurements(mdc);
+	    			anaLinkCountMinus= mdc.getMeasurements(simLinkCountMinus.getTimeBean());
 	            }else {
 	            	Thread[] threads=new Thread[2];
 	    			simandAnaRunRunnable[] functionEvals=new simandAnaRunRunnable[2];
@@ -270,13 +267,13 @@ public class SimAndAnalyticalGradientCalculator {
 	            		this.simGradient.put(m.getId(), new HashMap<String, LinkedHashMap<String, Double>>());
 	            		this.anaGradient.put(m.getId(), new HashMap<String, LinkedHashMap<String, Double>>());
 	            	}
-	            	for(String timeBeanId:simLinkCountPlus.getVolumes(m.getId()).keySet()) {
+	            	for(String timeBeanId:simLinkCountPlus.getValues(m.getId()).keySet()) {
 	            		if(i==0) {
 		            		this.simGradient.get(m.getId()).put(timeBeanId, new LinkedHashMap<String,Double>());
 		            		this.anaGradient.get(m.getId()).put(timeBeanId, new LinkedHashMap<String,Double>());
 		            	}
-	            		double simGrad=(simLinkCountPlus.getVolumes(m.getId()).get(timeBeanId) - simLinkCountMinus.getVolumes(m.getId()).get(timeBeanId)) / (2.0 * h);
-	            		double anaGrad=(anaLinkCountPlus.getVolumes(m.getId()).get(timeBeanId) - anaLinkCountMinus.getVolumes(m.getId()).get(timeBeanId)) / (2.0 * h);
+	            		double simGrad=(simLinkCountPlus.getValues(m.getId()).get(timeBeanId) - simLinkCountMinus.getValues(m.getId()).get(timeBeanId)) / (2.0 * h);
+	            		double anaGrad=(anaLinkCountPlus.getValues(m.getId()).get(timeBeanId) - anaLinkCountMinus.getValues(m.getId()).get(timeBeanId)) / (2.0 * h);
 	            		this.simGradient.get(m.getId()).get(timeBeanId).put(s,simGrad);
 	            		this.anaGradient.get(m.getId()).get(timeBeanId).put(s, anaGrad);
 	            	}
@@ -367,10 +364,9 @@ class simandAnaRunRunnable implements Runnable{
 	public void run() {
 		simRun.run(sue, this.config, this.atParam, true,threadNo,storage);
 		this.simCount=this.storage.getSimMeasurement(atParam);
-		this.anaCount=this.simCount.clone();
 		MeasurementDataContainer mdc = new MeasurementDataContainer();
 		sue.perFormSUE(pReader.ScaleUp(atParam), mdc);
-		this.anaCount.updateMeasurements(mdc);
+		this.anaCount = mdc.getMeasurements(this.simCount.getTimeBean());
 	}
 	
 	public Measurements getAnaCount() {

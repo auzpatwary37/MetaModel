@@ -11,7 +11,9 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Route;
 import org.matsim.core.population.routes.RouteUtils;
 import org.matsim.core.router.util.LeastCostPathCalculator.Path;
-import org.matsim.core.utils.collections.Tuple;
+
+import ust.hk.praisehk.metamodelcalibration.Utils.Tuple;
+
 /**
  * 
  * @author Ashraf
