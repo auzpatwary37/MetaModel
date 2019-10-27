@@ -54,6 +54,12 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		super.setDefaultParameters(pReader.getDefaultParam());
 	}
 	
+	/**
+	 * Initialize the metamodel
+	 * @param config The input config, for some initial parameters
+	 * @param timeBean Time beans considered
+	 * @param preader Other parameters
+	 */
 	public CNLSUEModelSubPop(Config config, Map<String, Tuple<Double, Double>> timeBean,ParamReader preader) {
 		super(timeBean);
 		this.subPopulationName = preader.getSubPopulationName();
