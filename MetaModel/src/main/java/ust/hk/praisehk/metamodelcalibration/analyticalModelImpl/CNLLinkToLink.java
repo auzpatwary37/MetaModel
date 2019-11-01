@@ -24,24 +24,24 @@ public class CNLLinkToLink extends CNLLink {
 	
 	private final Map<Id<Link>, Double> toLinkCapacity; //We are lenient here.
 
-	public CNLLinkToLink(Link link, LanesToLinkAssignment l2l) {
-		super(link);
+	public CNLLinkToLink(Link link, LanesToLinkAssignment l2l, double flowCapFactor) {
+		super(link, flowCapFactor);
 		Map<Id<Link>, Double> toLinkCapacityMap = new LinkedHashMap<>();
 		if(l2l!=null) {
 			for(Link toLink: link.getToNode().getOutLinks().values()) {
 				for(Lane lane: l2l.getLanes().values()) {
 					if(lane.getToLinkIds()!=null && lane.getToLinkIds().contains(toLink.getId())) {
 						if(!toLinkCapacityMap.containsKey(toLink.getId())) {
-							toLinkCapacityMap.put(toLink.getId(), lane.getCapacityVehiclesPerHour()); //Add the capacity if there is a link.
+							toLinkCapacityMap.put(toLink.getId(), lane.getCapacityVehiclesPerHour() * flowCapFactor); //Add the capacity if there is a link.
 						}else {
-							toLinkCapacityMap.put(toLink.getId(), toLinkCapacityMap.get(toLink.getId()) + lane.getCapacityVehiclesPerHour());
+							toLinkCapacityMap.put(toLink.getId(), toLinkCapacityMap.get(toLink.getId()) + lane.getCapacityVehiclesPerHour() * flowCapFactor);
 						}
 					}
 				}
 			}
 		}else {
 			for(Link toLink: link.getToNode().getOutLinks().values()) {
-				toLinkCapacityMap.put(toLink.getId(), link.getCapacity());
+				toLinkCapacityMap.put(toLink.getId(), link.getCapacity() * flowCapFactor);
 			}
 		}
 		toLinkCapacity = Collections.unmodifiableMap(toLinkCapacityMap); //Make it unmodifiable to prevent accidents

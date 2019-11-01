@@ -26,16 +26,16 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 	/**
 	 * constructor same as SUE Network
 	 */
-	public CNLNetwork(Network network, Lanes lanes){
+	public CNLNetwork(Network network, Lanes lanes, double flowCapFactor){
 		
 		for(Id<Node> NodeId:network.getNodes().keySet()){
 			this.network.addNode(cloneNode(network.getNodes().get(NodeId),network.getFactory()));
 		}
 		for(Id<Link> linkId:network.getLinks().keySet()){
 			if(lanes == null)
-				this.network.addLink(new CNLLink(network.getLinks().get(linkId)));
+				this.network.addLink(new CNLLink(network.getLinks().get(linkId), flowCapFactor));
 			else {
-				this.network.addLink(new CNLLinkToLink(network.getLinks().get(linkId), lanes.getLanesToLinkAssignments().get(linkId)));
+				this.network.addLink(new CNLLinkToLink(network.getLinks().get(linkId), lanes.getLanesToLinkAssignments().get(linkId), flowCapFactor));
 				considerLinkToLink = true;
 			}
 		}
@@ -49,8 +49,8 @@ public class CNLNetwork extends AnalyticalModelNetwork{
 //	
 	
 	@Override
-	public CNLNetwork createNetwork(Network network) {
-		CNLNetwork newNetwork=new CNLNetwork(network, null);
+	public CNLNetwork createNetwork(Network network, double flowCapFactor) {
+		CNLNetwork newNetwork=new CNLNetwork(network, null, flowCapFactor);
 		return newNetwork;
 	}
 

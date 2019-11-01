@@ -280,7 +280,7 @@ public class CNLSUEModel implements AnalyticalModel{
 		this.originalNetwork=network;
 		SignalFlowReductionGenerator sg = new SignalFlowReductionGenerator(scenario);
 		for(String s:this.timeBeans.keySet()) {
-			CNLNetwork analyticalNetwork = new CNLNetwork(network, scenario.getLanes());
+			CNLNetwork analyticalNetwork = new CNLNetwork(network, scenario.getLanes(), scenario.getConfig().qsim().getFlowCapFactor());
 			analyticalNetwork.updateGCRatio(sg);
 			this.networks.put(s, analyticalNetwork);
 			this.performTransitVehicleOverlay(this.networks.get(s),
