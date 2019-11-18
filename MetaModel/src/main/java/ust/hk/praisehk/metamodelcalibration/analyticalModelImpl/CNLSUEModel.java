@@ -503,6 +503,8 @@ public class CNLSUEModel implements AnalyticalModel{
 		if(params.containsKey("All MTRBusTransferDiscount")){
 			((AllPTTransferDiscount) this.tdc).setTransferDiscountAmount(params.get("All BusBusTransferDiscount"), 
 					params.get("All MTRBusTransferDiscount")); //Update the discount fare amount
+		}else if(params.containsKey("All SelectedFareDiscount")) {
+			((AllPTTransferDiscount) this.tdc).updateFixedStopDiscount(params.get("All SelectedFareDiscount"));
 		}
 		this.resetCarDemand();
 		this.resetFare();
