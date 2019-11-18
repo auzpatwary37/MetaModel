@@ -151,7 +151,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		this.odPairs.generateRouteandLinkIncidence(0.);
 		SignalFlowReductionGenerator sg = new SignalFlowReductionGenerator(scenario);
 		for(String s:this.getTimeBeans().keySet()) {
-			CNLNetwork analyticalNetwork = new CNLNetwork(network, scenario.getLanes());
+			CNLNetwork analyticalNetwork = new CNLNetwork(network, scenario.getLanes(), scenario.getConfig().qsim().getFlowCapFactor());
 			analyticalNetwork.updateGCRatio(sg);
 			this.networks.put(s, analyticalNetwork);
 			this.performTransitVehicleOverlay(this.networks.get(s),
@@ -222,7 +222,7 @@ public class CNLSUEModelSubPop extends CNLSUEModel{
 		SignalFlowReductionGenerator sg = new SignalFlowReductionGenerator(scenario);
 		//this.getOdPairs().generateRouteandLinkIncidence(0.);
 		for(String timeBin:this.timeBeans.keySet()) { ///Create network for each time bin
-			CNLNetwork analyticalNetwork = new CNLNetwork(network, lanes);
+			CNLNetwork analyticalNetwork = new CNLNetwork(network, lanes, scenario.getConfig().qsim().getFlowCapFactor());
 			analyticalNetwork.updateGCRatio(sg);
 			this.networks.put(timeBin, analyticalNetwork);
 			TransitNetworkHR transitNetwork = TransitNetworkHR.createFromSchedule(scenario.getNetwork(), 

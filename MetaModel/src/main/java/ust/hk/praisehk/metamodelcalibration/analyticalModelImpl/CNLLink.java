@@ -27,8 +27,8 @@ public class CNLLink extends AnalyticalModelLink{
 	 * Constructor
 	 * @param link
 	 */
-	public CNLLink(Link link) {
-		super(link);
+	public CNLLink(Link link, double flowCapFactor) {
+		super(link, flowCapFactor);
 	}
 	
 	private ConcurrentHashMap<String, Double> TransitMapping=new ConcurrentHashMap<>();

@@ -49,7 +49,7 @@ public abstract class AnalyticalModelNetwork implements Network{
 	/**
 	 * a Convenient method to create the network
 	 */
-	public abstract AnalyticalModelNetwork createNetwork(Network network);
+	public abstract AnalyticalModelNetwork createNetwork(Network network, double flowCapFactor);
 	
 	public abstract void updateGCRatio(SignalFlowReductionGenerator signalGC);
 	

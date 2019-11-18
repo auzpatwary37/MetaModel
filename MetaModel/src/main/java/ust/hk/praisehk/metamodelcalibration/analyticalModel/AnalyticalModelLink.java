@@ -40,12 +40,14 @@ public abstract class AnalyticalModelLink implements Link{
 	//protected double linkTravelTime=0;
 	protected double linkCarConstantVolume = 0; //A constant term added to the volume
 	protected double gcRatio=1; //This is the gcRatio of the links.
+	protected final double flowCapFactor;
 	/**
 	 * Constructor
 	 * @param link: The wrapped Link
 	 */
-	public AnalyticalModelLink(Link link) {
+	public AnalyticalModelLink(Link link, double flowCapFactor) {
 		this.link=link;
+		this.flowCapFactor = flowCapFactor;
 	}
 	/**
 	 * -------------------------------Wrapper class functions---------------------------------------------------------------
@@ -197,7 +199,7 @@ public abstract class AnalyticalModelLink implements Link{
 
 	@Override
 	public double getCapacity() {
-		return link.getCapacity();
+		return link.getCapacity() * flowCapFactor;
 	}
 
 	@Override
