@@ -24,6 +24,7 @@ import org.matsim.core.population.io.PopulationReader;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.facilities.ActivityFacility;
 import org.matsim.utils.objectattributes.ObjectAttributes;
+import org.matsim.utils.objectattributes.attributable.Attributes;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.Vehicles;
 
@@ -264,7 +265,7 @@ public abstract class AnalyticalModelODpairs {
 			Thread[] threads=new Thread[personList.size()];
 			for(int i=0;i<personList.size();i++) {
 				threadrun.add(new TripsCreatorFromPlan(personList.get(i),this));
-				threadrun.get(i).setPersonsAttributes(population.getPersonAttributes());
+				//threadrun.get(i).setPersonsAttributes(population.getPersonAttributes());
 				threads[i]=new Thread(threadrun.get(i));
 			}
 			for(int i=0;i<personList.size();i++) {
@@ -342,7 +343,7 @@ public abstract class AnalyticalModelODpairs {
 			Thread[] threads=new Thread[personList.size()];
 			for(int i=0;i<personList.size();i++) {
 				threadrun.add(new TripsCreatorFromPlan(personList.get(i),this));
-				if(withSubPop) threadrun.get(i).setPersonsAttributes(population.getPersonAttributes());
+				//if(withSubPop) threadrun.get(i).setPersonsAttributes(population.getPersonAttributes());
 				threads[i]=new Thread(threadrun.get(i));
 			}
 			for(int i=0;i<personList.size();i++) {
@@ -426,32 +427,39 @@ public abstract class AnalyticalModelODpairs {
 class TripsCreatorFromPlan implements Runnable {
 	private List<Person> Persons;
 	AnalyticalModelODpairs odPairs;
-	private ObjectAttributes personsAttributes=null;
+	//private Population population=null;
 	private ArrayList<Trip> trips=new ArrayList<>();
 	public TripsCreatorFromPlan(List<Person> persons,AnalyticalModelODpairs odPairs) {
 		this.Persons=persons;
 		this.odPairs=odPairs;
 	}
 	
-	public ObjectAttributes getPersonsAttributes() {
-		return personsAttributes;
-	}
-
-	public void setPersonsAttributes(ObjectAttributes personsAttributes) {
-		this.personsAttributes = personsAttributes;
-	}
+//	public Population getPersonsAttributes() {
+//		return population;
+//	}
+//
+//	public void setPopulation(Population population) {
+//		this.population = population;
+//	}
 	
 	@Override
 	public void run() {
-		if(personsAttributes==null) { //if there is no subpopulation
-			for(Person p:this.Persons) {
+		int subPopStatus = -1;
+		for(Person p: this.Persons) {
+			//If there is no subpopulation
+			if(p.getAttributes().getAttribute("SUBPOP_ATTRIB_NAME") == null) {
+				if(subPopStatus == 1) {
+					throw new IllegalArgumentException("Some agents has subpop but some doesn't!");
+				}
 				TripChain tripchain=this.odPairs.getNewTripChain(p.getSelectedPlan());
 				trips.addAll( tripchain.getTrips());
-			}
-		}else {
-			for(Person p:this.Persons) { //if there is subpopulation
+				subPopStatus = 0;
+			}else { //Else if there is subpopulation
+				if(subPopStatus == 0) {
+					throw new IllegalArgumentException("Some agents has subpop but some doesn't!");
+				}
 				TripChain tripchain=this.odPairs.getNewTripChain(p.getSelectedPlan());
-				String s=(String) this.personsAttributes.getAttribute(p.getId().toString(), "SUBPOP_ATTRIB_NAME");
+				String s=(String) p.getAttributes().getAttribute("SUBPOP_ATTRIB_NAME");
 				double pcu=this.odPairs.getVehicles().getVehicles().get(Id.createVehicleId(p.getId().toString())).getType().getPcuEquivalents();
 				for(Trip t:(ArrayList<Trip>)tripchain.getTrips()) {
 					t.setSubPopulationName(s);
@@ -459,8 +467,8 @@ class TripsCreatorFromPlan implements Runnable {
 				}
 				//TODO Get the actual mode default at that trp
 				trips.addAll(tripchain.getTrips());
+				subPopStatus = 1;
 			}
-			
 		}
 	}
 	

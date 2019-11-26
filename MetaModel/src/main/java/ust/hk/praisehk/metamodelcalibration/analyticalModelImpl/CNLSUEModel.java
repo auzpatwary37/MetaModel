@@ -34,6 +34,7 @@ import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.vehicles.Vehicles;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import de.xypron.jcobyla.Cobyla;
@@ -504,7 +505,13 @@ public class CNLSUEModel implements AnalyticalModel{
 			((AllPTTransferDiscount) this.tdc).setTransferDiscountAmount(params.get("All BusBusTransferDiscount"), 
 					params.get("All MTRBusTransferDiscount")); //Update the discount fare amount
 		}else if(params.containsKey("All SelectedFareDiscount")) {
-			((AllPTTransferDiscount) this.tdc).updateFixedStopDiscount(params.get("All SelectedFareDiscount"));
+			if(params.containsKey("All SelectedFareDiscount2")) {
+				((AllPTTransferDiscount) this.tdc).updateFixedStopDiscount(Lists.newArrayList(
+						params.get("All SelectedFareDiscount"), params.get("All SelectedFareDiscount2")));
+			}else {
+				((AllPTTransferDiscount) this.tdc).updateFixedStopDiscount(
+						Lists.newArrayList(params.get("All SelectedFareDiscount")));
+			}
 		}
 		this.resetCarDemand();
 		this.resetFare();
