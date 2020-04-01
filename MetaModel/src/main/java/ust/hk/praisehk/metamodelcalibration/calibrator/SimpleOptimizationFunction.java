@@ -121,8 +121,8 @@ public class SimpleOptimizationFunction extends OptimizationFunction{
 			j++;
 		}
 		
-		
-		c[k]=this.getTrustRegionRadius()-Math.sqrt(trustRegionConst);
+		double ddd=this.getTrustRegionRadius();
+		c[k]=ddd-Math.sqrt(trustRegionConst);
 		
 		return c;
 	}

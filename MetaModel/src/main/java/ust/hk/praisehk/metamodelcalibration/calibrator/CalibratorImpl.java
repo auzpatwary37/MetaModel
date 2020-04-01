@@ -317,6 +317,7 @@ public class CalibratorImpl implements Calibrator {
 		}
 		//Generating metaModels
 		
+		//System.out.println();
 		this.createMetaModel(this.currentSimGradient, this.currentAnaGradient, metaModelType);
 		//Calculating new Point
 		if(this.iterationNo>0) {
@@ -424,9 +425,9 @@ public class CalibratorImpl implements Calibrator {
 		fw.flush();
 		fw.close();
 		}catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
-	}
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	

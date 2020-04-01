@@ -95,7 +95,7 @@ public class CNLSUEModel implements AnalyticalModel{
 	
 	
 	private double alphaMSA=1.9;//parameter for decreasing MSA step size
-	private double gammaMSA=.1;//parameter for decreasing MSA step size
+	private double gammaMSA=.1;//parameter for increasing MSA step size
 	
 	//other Parameters for the Calibration Process
 	private double tolerance = 100;
